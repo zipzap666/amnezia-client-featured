@@ -1,6 +1,9 @@
 #include "appSplitTunnelingUiController.h"
 
 #include <QFileInfo>
+#include <QFutureWatcher>
+#include <QtConcurrent>
+#include "core/utils/runningApps.h"
 
 #include "core/utils/errorCodes.h"
 #include "core/utils/routeModes.h"
@@ -77,3 +80,42 @@ void AppSplitTunnelingUiController::updateModel()
     m_appSplitTunnelingModel->updateModel(m_appSplitTunnelingController->getApps());
 }
 
+
+void AppSplitTunnelingUiController::refreshRunningApps()
+{
+#ifdef Q_OS_WIN
+    if (m_runningAppsLoading)
+        return;
+    m_runningAppsLoading = true;
+    emit runningAppsLoadingChanged();
+    auto *watcher = new QFutureWatcher<QVariantList>(this);
+    connect(watcher, &QFutureWatcher<QVariantList>::finished, this, [this, watcher] {
+        m_runningApps = watcher->result();
+        const auto added = m_appSplitTunnelingController->getApps();
+        for (auto &value : m_runningApps) {
+            auto app = value.toMap();
+            const auto key = RunningApps::pathKey(app.value("appPath").toString());
+            app.insert("alreadyAdded", std::any_of(added.begin(), added.end(), [&key](const auto &item) {
+                return RunningApps::pathKey(item.appPath) == key;
+            }));
+            value = app;
+        }
+        m_runningAppsLoading = false;
+        emit runningAppsChanged();
+        emit runningAppsLoadingChanged();
+        watcher->deleteLater();
+    });
+    watcher->setFuture(QtConcurrent::run(&RunningApps::enumerate));
+#endif
+}
+
+void AppSplitTunnelingUiController::addRunningApps(const QStringList &paths)
+{
+#ifdef Q_OS_WIN
+    for (const auto &path : paths) {
+        if (!path.isEmpty())
+            m_appSplitTunnelingController->addApp({ QFileInfo(path).fileName(), "", path });
+    }
+    emit finished(tr("The selected applications have been added"));
+#endif
+}

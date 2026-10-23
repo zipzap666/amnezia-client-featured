@@ -1,4 +1,5 @@
 #include "appSplitTunnelingController.h"
+#include "core/utils/runningApps.h"
 
 AppSplitTunnelingController::AppSplitTunnelingController(SecureAppSettingsRepository* appSettingsRepository)
     : m_appSettingsRepository(appSettingsRepository)
@@ -15,7 +16,13 @@ AppSplitTunnelingController::AppSplitTunnelingController(SecureAppSettingsReposi
 
 bool AppSplitTunnelingController::addApp(const amnezia::InstalledAppInfo &appInfo)
 {
+#ifdef Q_OS_WIN
+    if (appInfo.appPath.isEmpty() || std::any_of(m_apps.begin(), m_apps.end(), [&appInfo](const auto &app) {
+            return RunningApps::pathKey(app.appPath) == RunningApps::pathKey(appInfo.appPath);
+        })) {
+#else
     if (m_apps.contains(appInfo)) {
+#endif
         return false;
     }
 

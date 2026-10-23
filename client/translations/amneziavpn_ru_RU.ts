@@ -3963,6 +3963,17 @@ Create one from the current settings.</source>
 </context>
 <context>
     <name>PageSettingsAppSplitTunneling</name>
+    <message><source>Add application</source><translation>Добавить приложение</translation></message>
+    <message><source>From running applications</source><translation>Из запущенных приложений</translation></message>
+    <message><source>Choose executable file</source><translation>Выбрать файл EXE</translation></message>
+    <message><source>Executable files (*.exe)</source><translation>Исполняемые файлы (*.exe)</translation></message>
+    <message><source>Running applications</source><translation>Запущенные приложения</translation></message>
+    <message><source>Search by name or path</source><translation>Поиск по имени или пути</translation></message>
+    <message><source>Loading...</source><translation>Загрузка...</translation></message>
+    <message><source>Refresh list</source><translation>Обновить список</translation></message>
+    <message><source>Already added</source><translation>Уже добавлено</translation></message>
+    <message><source>No applications found</source><translation>Приложения не найдены</translation></message>
+    <message><source>Add selected</source><translation>Добавить выбранные</translation></message>
     <message>
         <location filename="../ui/qml/Pages2/PageSettingsAppSplitTunneling.qml" line="27"/>
         <source>Cannot change split tunneling settings during active connection</source>

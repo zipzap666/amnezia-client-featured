@@ -252,16 +252,179 @@ PageType {
                     PageController.showBusyIndicator(true)
 
                     if (Qt.platform.os === "windows") {
-                        var fileName = SystemController.getFileName(qsTr("Open executable file"),
-                                                                    qsTr("Executable files (*.*)"))
-                        if (fileName !== "") {
-                            AppSplitTunnelingController.addApp(fileName)
-                        }
+                        appSourceDrawer.openTriggered()
                     } else if (Qt.platform.os === "android"){
                         installedAppDrawer.openTriggered()
                     }
 
                     PageController.showBusyIndicator(false)
+                }
+            }
+        }
+    }
+
+    DrawerType2 {
+        id: appSourceDrawer
+        anchors.fill: parent
+        expandedHeight: Math.min(parent.height, 224 + PageController.safeAreaBottomMargin)
+        property string selectedSource: ""
+        onAboutToShow: selectedSource = ""
+        onClosed: {
+            var source = selectedSource
+            selectedSource = ""
+            // Let DrawerType2 restore focus and drawer depth before opening the next UI.
+            Qt.callLater(function() {
+                if (source === "running") {
+                    runningAppsDrawer.openTriggered()
+                } else if (source === "file") {
+                    var fileName = SystemController.getFileName(qsTr("Open executable file"),
+                                                                qsTr("Executable files (*.exe)"))
+                    if (fileName !== "")
+                        AppSplitTunnelingController.addApp(fileName)
+                }
+            })
+        }
+        expandedStateContent: Item {
+            implicitHeight: appSourceDrawer.expandedHeight
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 16
+                Header2Type {
+                    Layout.fillWidth: true
+                    headerText: qsTr("Add application")
+                }
+                LabelWithButtonType {
+                    Layout.fillWidth: true
+                    text: qsTr("From running applications")
+                    rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                    clickedFunction: function() {
+                        appSourceDrawer.selectedSource = "running"
+                        appSourceDrawer.closeTriggered()
+                    }
+                }
+                LabelWithButtonType {
+                    Layout.fillWidth: true
+                    text: qsTr("Choose executable file")
+                    rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                    clickedFunction: function() {
+                        appSourceDrawer.selectedSource = "file"
+                        appSourceDrawer.closeTriggered()
+                    }
+                }
+                Item { Layout.fillHeight: true }
+            }
+        }
+    }
+
+    DrawerType2 {
+        id: runningAppsDrawer
+        anchors.fill: parent
+        expandedHeight: parent.height * 0.9
+        property var selectedPaths: ({})
+        property string searchText: ""
+        readonly property var filteredApps: {
+            var query = searchText.toLowerCase()
+            return AppSplitTunnelingController.runningApps.filter(function(app) {
+                return app.appName.toLowerCase().indexOf(query) !== -1 ||
+                       app.appPath.toLowerCase().indexOf(query) !== -1
+            })
+        }
+        function refresh() {
+            // A new snapshot starts a new selection; exited rows cannot be submitted.
+            selectedPaths = ({})
+            AppSplitTunnelingController.refreshRunningApps()
+        }
+        onAboutToShow: {
+            searchText = ""
+            refresh()
+        }
+        expandedStateContent: Item {
+            implicitHeight: runningAppsDrawer.expandedHeight
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 16
+                BackButtonType {
+                    backButtonFunction: function() { runningAppsDrawer.closeTriggered() }
+                }
+                Header2Type {
+                    Layout.fillWidth: true
+                    headerText: qsTr("Running applications")
+                }
+                TextFieldWithHeaderType {
+                    Layout.fillWidth: true
+                    textField.placeholderText: qsTr("Search by name or path")
+                    textField.text: runningAppsDrawer.searchText
+                    textField.onTextChanged: runningAppsDrawer.searchText = textField.text
+                }
+                BasicButtonType {
+                    Layout.fillWidth: true
+                    text: AppSplitTunnelingController.runningAppsLoading ? qsTr("Loading...") : qsTr("Refresh list")
+                    enabled: !AppSplitTunnelingController.runningAppsLoading
+                    clickedFunc: function() { runningAppsDrawer.refresh() }
+                }
+                ListViewType {
+                    id: runningList
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    enabled: !AppSplitTunnelingController.runningAppsLoading
+                    model: runningAppsDrawer.filteredApps
+                    ScrollBar.vertical: ScrollBarType {}
+                    delegate: Item {
+                        id: runningAppRow
+                        required property var modelData
+                        width: runningList.width
+                        implicitHeight: appCheckBox.implicitHeight
+                        Image {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 24
+                            height: 24
+                            source: runningAppRow.modelData.appIcon || "qrc:/images/controls/app.svg"
+                            fillMode: Image.PreserveAspectFit
+                        }
+                        CheckBoxType {
+                            id: appCheckBox
+                            property var modelData: runningAppRow.modelData
+                            width: parent.width - 48
+                            text: modelData.appName + (modelData.alreadyAdded ? " — " + qsTr("Already added") : "")
+                            descriptionText: modelData.appPath
+                            enabled: !modelData.alreadyAdded
+                            checked: modelData.alreadyAdded || !!runningAppsDrawer.selectedPaths[modelData.appPath]
+                            function handleSwitch(event) {
+                                if (!event.isAutoRepeat) {
+                                    toggle()
+                                    toggled()
+                                }
+                                event.accepted = true
+                            }
+                            onToggled: {
+                                var selection = Object.assign({}, runningAppsDrawer.selectedPaths)
+                                if (checked)
+                                    selection[modelData.appPath] = true
+                                else
+                                    delete selection[modelData.appPath]
+                                runningAppsDrawer.selectedPaths = selection
+                            }
+                        }
+                    }
+                    Label {
+                        anchors.centerIn: parent
+                        visible: runningList.count === 0 && !AppSplitTunnelingController.runningAppsLoading
+                        text: qsTr("No applications found")
+                        color: AmneziaStyle.color.paleGray
+                    }
+                }
+                BasicButtonType {
+                    Layout.fillWidth: true
+                    text: qsTr("Add selected")
+                    enabled: root.pageEnabled && !AppSplitTunnelingController.runningAppsLoading &&
+                             Object.keys(runningAppsDrawer.selectedPaths).length > 0
+                    clickedFunc: function() {
+                        AppSplitTunnelingController.addRunningApps(Object.keys(runningAppsDrawer.selectedPaths))
+                        runningAppsDrawer.closeTriggered()
+                    }
                 }
             }
         }

@@ -422,8 +422,8 @@ void CoreSignalHandlers::initNotificationHandler()
 #if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
     m_coreController->m_notificationHandler = NotificationHandler::create(m_coreController);
 
-    connect(m_coreController->m_connectionController, &ConnectionController::connectionStateChanged, m_coreController->m_notificationHandler,
-            &NotificationHandler::setConnectionState);
+    connect(m_coreController->m_connectionController, &ConnectionController::connectionNotificationStateChanged, m_coreController->m_notificationHandler,
+            &NotificationHandler::updateConnectionState);
 
     connect(m_coreController->m_notificationHandler, &NotificationHandler::raiseRequested, m_coreController->m_pageController, &PageController::raiseMainWindow);
     connect(m_coreController->m_notificationHandler, &NotificationHandler::connectRequested, m_coreController->m_connectionUiController,

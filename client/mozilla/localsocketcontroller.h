@@ -6,6 +6,8 @@
 #define LOCALSOCKETCONTROLLER_H
 
 #include <QHostAddress>
+#include <QJsonObject>
+#include <optional>
 #include <QLocalSocket>
 #include <QTimer>
 #include <functional>
@@ -16,7 +18,9 @@
 class QJsonObject;
 
 class LocalSocketController final : public ControllerImpl {
+  Q_OBJECT
   Q_DISABLE_COPY_MOVE(LocalSocketController)
+  friend class LocalSocketControllerTest;
 
  public:
   LocalSocketController();
@@ -35,6 +39,9 @@ class LocalSocketController final : public ControllerImpl {
   void cleanupBackendLogs() override;
 
   bool multihopSupported() override { return true; }
+
+ signals:
+  void backendError();
 
  private:
   void initializeInternal();
@@ -55,6 +62,11 @@ class LocalSocketController final : public ControllerImpl {
     eDisconnected,
   } m_daemonState = eUnknown;
 
+  std::optional<QJsonObject> m_pendingActivation;
+  bool m_activationRequested = false;
+  bool m_activationFailed = false;
+  bool m_deactivationPending = false;
+  bool m_waitingForStoppedStatus = false;
   QLocalSocket* m_socket = nullptr;
 
   QByteArray m_buffer;

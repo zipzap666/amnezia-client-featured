@@ -22,18 +22,11 @@ PageType {
 
     property var isServerFromTelegramApi: ServersUiController.isServerFromApi(ServersUiController.defaultServerId)
     
-    property bool pageEnabled
+    readonly property bool pageEnabled: !ServersUiController.isDefaultServerDefaultContainerHasSplitTunneling
 
     Component.onCompleted: {
-        if (ConnectionController.isConnected) {
-            PageController.showNotificationMessage(qsTr("Cannot change split tunneling settings during active connection"))
-            root.pageEnabled = false
-        } else if (ServersUiController.isDefaultServerDefaultContainerHasSplitTunneling) {
+        if (!pageEnabled)
             PageController.showNotificationMessage(qsTr("Default server does not support split tunneling function"))
-            root.pageEnabled = false
-        } else {
-            root.pageEnabled = true
-        }
     }
 
     Connections {

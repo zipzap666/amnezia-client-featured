@@ -7,6 +7,7 @@
 #include <QScopedPointer>
 #include <QRemoteObjectNode>
 #include <QTimer>
+#include "core/utils/splitTunnelSession.h"
 
 #include "core/protocols/vpnProtocol.h"
 #include "core/utils/errorCodes.h"
@@ -59,6 +60,7 @@ public slots:
     void setConnectionState(Vpn::ConnectionState state);
 
 signals:
+    void splitTunnelSnapshotConnected(const QJsonObject &snapshot);
     void bytesChanged(quint64 receivedBytes, quint64 sentBytes);
     void connectionStateChanged(Vpn::ConnectionState state);
     void vpnProtocolError(amnezia::ErrorCode error);
@@ -77,6 +79,11 @@ private:
     SecureAppSettingsRepository* m_appSettingsRepository;
 
     QJsonObject m_vpnConfiguration;
+    QJsonObject m_splitSnapshot;
+    DockerContainer m_sessionContainer = DockerContainer::None;
+    quint64 m_routeGeneration = 0;
+    bool m_restartAfterDisconnect = false;
+    ErrorCode m_startError = ErrorCode::NoError;
     QJsonObject m_routeMode;
     QString m_remoteAddress;
 
@@ -94,6 +101,7 @@ private:
 
    void createProtocolConnections();
 
+   void startConfiguredProtocol(DockerContainer container, quint64 generation);
    void appendSplitTunnelingConfig();
    void appendKillSwitchConfig();
 };

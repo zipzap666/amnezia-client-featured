@@ -16,6 +16,7 @@
 #include "core/repositories/secureAppSettingsRepository.h"
 #include "core/protocols/vpnProtocol.h"
 #include "vpnConnection.h"
+#include "core/utils/splitTunnelSession.h"
 
 using namespace amnezia;
 
@@ -32,13 +33,18 @@ public:
 
     ErrorCode prepareConnection(const QString &serverId,
                                QJsonObject& vpnConfiguration,
-                               DockerContainer& container);
+                               DockerContainer& container,
+                               const QJsonObject &splitSettings = {},
+                               DockerContainer forcedContainer = DockerContainer::None);
 
     ErrorCode isConnectionSupported(const QString &serverId) const;
 
     ErrorCode openConnection(const QString &serverId);
 
     void closeConnection();
+    void reconnectWithSavedRules();
+    bool hasPendingSplitTunnelChanges() const { return m_splitSession.pending(); }
+    bool isSplitTunnelReconnectInProgress() const { return m_splitSession.reconnecting(); }
 
 #ifdef Q_OS_ANDROID
     void restoreConnection();
@@ -57,14 +63,18 @@ public:
                                              const QString &description,
                                              int configVersion,
                                              const ContainerConfig &containerConfig,
-                                             DockerContainer container);
+                                             DockerContainer container,
+                                             const QJsonObject &splitSettings = {});
 
     bool isServiceReady() const;
 
     bool isContainerSupported(DockerContainer container) const;
 
 signals:
+    void splitTunnelStatusChanged();
+    void reconnectErrorOccurred(ErrorCode error);
     void connectionStateChanged(Vpn::ConnectionState state);
+    void connectionNotificationStateChanged(Vpn::ConnectionState state, bool silent);
     void openConnectionRequested(const QString &serverId, DockerContainer container, const QJsonObject &vpnConfiguration);
     void closeConnectionRequested();
     void killSwitchModeChangedRequested(bool enabled);
@@ -74,6 +84,15 @@ signals:
 #endif
 
 private:
+    void refreshSplitTunnelSettings();
+    void handleConnectionState(Vpn::ConnectionState state);
+    ErrorCode openConnectionImpl(const QString &serverId, DockerContainer forcedContainer);
+    SplitTunnelSession m_splitSession;
+    Vpn::ConnectionState m_state = Vpn::Disconnected;
+    QString m_sessionServerId;
+    DockerContainer m_sessionContainer = DockerContainer::None;
+    bool m_opening = false;
+    quint64 m_requestGeneration = 0;
     ErrorCode defaultContainerForServer(const QString &serverId, DockerContainer &container) const;
 
     SecureServersRepository* m_serversRepository;

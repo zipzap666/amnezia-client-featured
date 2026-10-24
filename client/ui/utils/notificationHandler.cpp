@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <QDebug>
+#include <QScopedValueRollback>
 #include "notificationHandler.h"
 
 #if defined(Q_OS_IOS)
@@ -41,6 +42,16 @@ NotificationHandler::~NotificationHandler() {
     s_instance = nullptr;
 }
 
+void NotificationHandler::updateConnectionState(Vpn::ConnectionState state, bool silent)
+{
+#ifndef Q_OS_WIN
+    silent = false;
+#endif
+    // Keep tray state and connection bookkeeping current even without a balloon.
+    const QScopedValueRollback<bool> guard(m_silentConnectionUpdate, silent);
+    setConnectionState(state);
+}
+
 void NotificationHandler::setConnectionState(Vpn::ConnectionState state)
 {
     if (state != Vpn::ConnectionState::Connected && state != Vpn::ConnectionState::Disconnected) {
@@ -72,7 +83,7 @@ void NotificationHandler::setConnectionState(Vpn::ConnectionState state)
 
     Q_ASSERT(title.isEmpty() == message.isEmpty());
 
-    if (!title.isEmpty()) {
+    if (!title.isEmpty() && !m_silentConnectionUpdate) {
         notifyInternal(VpnState, title, message, 2000);
     }
 }

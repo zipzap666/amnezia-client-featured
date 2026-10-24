@@ -157,10 +157,45 @@ Window  {
         }
     }
 
+    Rectangle {
+        id: splitTunnelNotice
+        width: root.width
+        height: visible ? splitTunnelNoticeContent.implicitHeight + 24 + PageController.safeAreaTopMargin : 0
+        visible: ConnectionController.hasPendingSplitTunnelChanges || ConnectionController.isSplitTunnelReconnectInProgress
+        color: AmneziaStyle.color.midnightBlack
+        ColumnLayout {
+            id: splitTunnelNoticeContent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 12
+            anchors.topMargin: 12 + PageController.safeAreaTopMargin
+            Label {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                color: AmneziaStyle.color.paleGray
+                text: ConnectionController.isSplitTunnelReconnectInProgress
+                      ? qsTr("Reconnecting. The connection will be temporarily interrupted.")
+                      : qsTr("Settings saved. Reconnect VPN to apply them.")
+            }
+            BasicButtonType {
+                Layout.fillWidth: true
+                text: qsTr("Reconnect")
+                enabled: ConnectionController.isConnected && !ConnectionController.isConnectionInProgress
+                         && !ConnectionController.isSplitTunnelReconnectInProgress
+                clickedFunc: function() {
+                    PageController.showNotificationMessage(qsTr("The VPN connection will be temporarily interrupted."))
+                    ConnectionController.reconnectWithSavedRules()
+                }
+            }
+        }
+    }
+
     PageStart {
         objectName: "pageStart"
         width: root.width
-        height: root.height
+        y: splitTunnelNotice.height
+        height: root.height - splitTunnelNotice.height
     }
 
     Item {

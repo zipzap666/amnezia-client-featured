@@ -15,6 +15,8 @@ class ConnectionUiController : public QObject
     Q_OBJECT
 
 public:
+    Q_PROPERTY(bool hasPendingSplitTunnelChanges READ hasPendingSplitTunnelChanges NOTIFY splitTunnelStatusChanged)
+    Q_PROPERTY(bool isSplitTunnelReconnectInProgress READ isSplitTunnelReconnectInProgress NOTIFY splitTunnelStatusChanged)
     Q_PROPERTY(bool isConnected READ isConnected NOTIFY connectionStateChanged)
     Q_PROPERTY(bool isConnectionInProgress READ isConnectionInProgress NOTIFY connectionStateChanged)
     Q_PROPERTY(QString connectionStateText READ connectionStateText NOTIFY connectionStateChanged)
@@ -25,11 +27,14 @@ public:
 
     ~ConnectionUiController() = default;
 
+    bool hasPendingSplitTunnelChanges() const { return m_connectionController->hasPendingSplitTunnelChanges(); }
+    bool isSplitTunnelReconnectInProgress() const { return m_connectionController->isSplitTunnelReconnectInProgress(); }
     bool isConnected() const;
     bool isConnectionInProgress() const;
     QString connectionStateText() const;
 
 public slots:
+    void reconnectWithSavedRules();
     void toggleConnection();
 
     void openConnection();
@@ -43,6 +48,7 @@ public slots:
     void onTranslationsUpdated();
 
 signals:
+    void splitTunnelStatusChanged();
     void connectionStateChanged();
 
     void connectionErrorOccurred(ErrorCode errorCode);

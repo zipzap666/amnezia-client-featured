@@ -76,7 +76,11 @@ void LocalSocketController::errorOccurred(
   }
 
   qCritical() << "ControllerError";
-  disconnectInternal();
+  m_activationRequested = false;
+  m_deactivationPending = false;
+  m_waitingForStoppedStatus = false;
+  m_activationFailed = true;
+  emit backendError();
 }
 
 void LocalSocketController::disconnectInternal() {
@@ -123,6 +127,14 @@ void LocalSocketController::daemonConnected() {
 }
 
 void LocalSocketController::activate(const QJsonObject &rawConfig) {
+  if (m_daemonState != eReady) {
+    m_pendingActivation = rawConfig;
+    return;
+  }
+  m_activationRequested = true;
+  m_activationFailed = false;
+  m_deactivationPending = false;
+  m_waitingForStoppedStatus = false;
   QString protocolName = rawConfig.value("protocol").toString();
 
   int splitTunnelType = rawConfig.value("splitTunnelType").toInt();
@@ -266,6 +278,12 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
 
 void LocalSocketController::deactivate() {
   logger.debug() << "Deactivating";
+  m_pendingActivation.reset();
+  if (m_deactivationPending) return;
+  if (!m_activationRequested) {
+    emit disconnected();
+    return;
+  }
 
   if (m_daemonState != eReady) {
     logger.debug() << "No disconnect, controller is not ready";
@@ -275,8 +293,9 @@ void LocalSocketController::deactivate() {
 
   QJsonObject json;
   json.insert("type", "deactivate");
+  m_deactivationPending = true;
   write(json);
-  emit disconnected();
+  // Completion is acknowledged by the daemon, not by the socket write.
 }
 
 void LocalSocketController::checkStatus() {
@@ -400,6 +419,11 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
     }
 
     emit initialized(true, connected.toBool(), datetime);
+    if (m_pendingActivation) {
+      const auto pending = *m_pendingActivation;
+      m_pendingActivation.reset();
+      activate(pending);
+    }
     return;
   }
 
@@ -409,6 +433,20 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
   }
 
   if (type == "status") {
+    if (m_waitingForStoppedStatus) {
+      if (obj.value("connected").isBool() && !obj.value("connected").toBool()) {
+        m_waitingForStoppedStatus = false;
+        m_deactivationPending = false;
+        m_activationRequested = false;
+        disconnectInternal();
+      } else {
+        m_deactivationPending = false;
+        m_waitingForStoppedStatus = false;
+        m_activationFailed = true;
+        emit backendError();
+      }
+      return;
+    }
 
     QJsonValue serverIpv4Gateway = obj.value("serverIpv4Gateway");
     if (!serverIpv4Gateway.isString()) {
@@ -441,11 +479,20 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
   }
 
   if (type == "disconnected") {
+    if (m_deactivationPending) {
+      // The daemon emits disconnected before final DNS cleanup. A status
+      // round trip is a barrier behind completion of that command.
+      m_waitingForStoppedStatus = true;
+      checkStatus();
+      return;
+    }
+    m_activationRequested = false;
     disconnectInternal();
     return;
   }
 
   if (type == "connected") {
+    if (!m_activationRequested || m_activationFailed || m_deactivationPending) return;
     QJsonValue pubkey = obj.value("pubkey");
     if (!pubkey.isString()) {
       logger.error() << "Unexpected pubkey value";
@@ -464,6 +511,10 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
   }
 
   if (type == "backendFailure") {
+    m_deactivationPending = false;
+    m_waitingForStoppedStatus = false;
+    m_activationFailed = true;
+    emit backendError();
     if (!obj.contains("errorCode")) {
       // report a generic error if we dont know what it is.
       logger.error() << "generic backend failure error";

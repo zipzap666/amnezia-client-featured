@@ -484,3 +484,18 @@ void SecureAppSettingsRepository::setXraySavedConfigs(const QByteArray &data)
 {
     setValue("Xray/savedConfigs", data);
 }
+
+QJsonObject SecureAppSettingsRepository::splitTunnelSnapshot() const
+{
+    QJsonObject sites, apps;
+    for (int mode = 0; mode <= 2; ++mode) {
+        sites.insert(QString::number(mode), QJsonObject::fromVariantMap(vpnSites(static_cast<RouteMode>(mode))));
+        QJsonArray paths;
+        for (const auto &app : vpnApps(static_cast<AppsRouteMode>(mode)))
+            paths.append(app.appPath.isEmpty() ? app.packageName : app.appPath);
+        apps.insert(QString::number(mode), paths);
+    }
+    return {{"sitesEnabled", isSitesSplitTunnelingEnabled()}, {"siteMode", int(routeMode())},
+            {"appsEnabled", isAppsSplitTunnelingEnabled()}, {"appMode", int(appsRouteMode())},
+            {"sites", sites}, {"apps", apps}};
+}

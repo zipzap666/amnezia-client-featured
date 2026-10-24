@@ -7231,5 +7231,9 @@ Remove the server from the app to continue.</source>
         <source>Cannot remove server during active connection</source>
         <translation>Невозможно удалить сервер во время активного соединения</translation>
     </message>
+    <message><source>Settings saved. Reconnect VPN to apply them.</source><translation>Настройки сохранены. Для применения переподключите VPN</translation></message>
+    <message><source>Reconnect</source><translation>Переподключить</translation></message>
+    <message><source>Reconnecting. The connection will be temporarily interrupted.</source><translation>Переподключение. Соединение временно прервётся.</translation></message>
+    <message><source>The VPN connection will be temporarily interrupted.</source><translation>Соединение VPN временно прервётся.</translation></message>
 </context>
 </TS>

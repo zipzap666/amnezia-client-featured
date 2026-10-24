@@ -22,6 +22,7 @@ class SecureAppSettingsRepository : public QObject
     Q_OBJECT
 
 public:
+    QJsonObject splitTunnelSnapshot() const;
     explicit SecureAppSettingsRepository(SecureQSettings* settings, QObject *parent = nullptr);
 
     QLocale getAppLanguage() const;

@@ -22,6 +22,8 @@ ConnectionUiController::ConnectionUiController(ConnectionController* connectionC
 
     connect(this, &ConnectionUiController::connectButtonClicked, this, &ConnectionUiController::toggleConnection, Qt::QueuedConnection);
 
+    connect(m_connectionController, &ConnectionController::splitTunnelStatusChanged, this, &ConnectionUiController::splitTunnelStatusChanged);
+    connect(m_connectionController, &ConnectionController::reconnectErrorOccurred, this, &ConnectionUiController::connectionErrorOccurred);
     m_state = Vpn::ConnectionState::Disconnected;
 }
 
@@ -123,6 +125,10 @@ QString ConnectionUiController::connectionStateText() const
 
 void ConnectionUiController::toggleConnection()
 {
+    if (isSplitTunnelReconnectInProgress()) {
+        closeConnection();
+        return;
+    }
     if (m_state == Vpn::ConnectionState::Preparing) {
         emit preparingConfig();
         return;
@@ -200,4 +206,9 @@ bool ConnectionUiController::isRevokeBlockedDuringActiveConnection(const QString
     }
 
     return connectionClientId == clientId || connectionClientId.contains(clientId);
+}
+
+void ConnectionUiController::reconnectWithSavedRules()
+{
+    m_connectionController->reconnectWithSavedRules();
 }

@@ -87,7 +87,15 @@ bool IpSplitTunnelingController::addSite(const QString &hostname)
     }
     
     if (addSiteInternal(normalizedHostname, {})) {
-        QHostInfo::lookupHost(normalizedHostname, this, SLOT(onHostResolved(QHostInfo)));
+        const auto mode = m_currentRouteMode;
+        QHostInfo::lookupHost(normalizedHostname, this, [this, mode, normalizedHostname](const QHostInfo &info) {
+            if (!m_appSettingsRepository->vpnSites(mode).contains(normalizedHostname)) return;
+            QStringList ips;
+            for (const auto &address : info.addresses())
+                if (address.protocol() == QAbstractSocket::IPv4Protocol) ips.append(address.toString());
+            if (!ips.isEmpty()) m_appSettingsRepository->addVpnSite(mode, normalizedHostname, ips);
+            if (mode == m_currentRouteMode) fillSites();
+        });
         return true;
     }
     

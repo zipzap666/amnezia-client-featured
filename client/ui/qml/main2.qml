@@ -161,7 +161,9 @@ Window  {
         id: splitTunnelNotice
         width: root.width
         height: visible ? splitTunnelNoticeContent.implicitHeight + 24 + PageController.safeAreaTopMargin : 0
-        visible: ConnectionController.hasPendingSplitTunnelChanges || ConnectionController.isSplitTunnelReconnectInProgress
+        visible: ConnectionController.isSplitTunnelReconnectInProgress
+                 || (ConnectionController.hasPendingSplitTunnelChanges
+                     && (ConnectionController.isConnected || ConnectionController.isConnectionInProgress))
         color: AmneziaStyle.color.midnightBlack
         ColumnLayout {
             id: splitTunnelNoticeContent

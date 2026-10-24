@@ -22,6 +22,7 @@ class IpSplitTunnelingController : public QObject
     Q_OBJECT
 
 public:
+    SecureAppSettingsRepository *settingsRepository() const { return m_appSettingsRepository; }
     explicit IpSplitTunnelingController(SecureAppSettingsRepository* appSettingsRepository, QObject* parent = nullptr);
 
     bool addSite(const QString &hostname);

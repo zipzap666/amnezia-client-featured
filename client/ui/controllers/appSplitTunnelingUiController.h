@@ -2,6 +2,7 @@
 #define APPSPLITTUNNELINGUICONTROLLER_H
 
 #include <QObject>
+#include "splitTunnelGroupsUiController.h"
 #include <QVector>
 #include <QVariant>
 
@@ -14,6 +15,8 @@
 class AppSplitTunnelingUiController : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QVariantList treeRules READ treeRules NOTIFY treeRulesChanged)
+    Q_PROPERTY(QObject* groupsController READ groupsController CONSTANT)
 
     Q_PROPERTY(QVariantList runningApps READ runningApps NOTIFY runningAppsChanged)
     Q_PROPERTY(bool runningAppsLoading READ runningAppsLoading NOTIFY runningAppsLoadingChanged)
@@ -22,6 +25,8 @@ class AppSplitTunnelingUiController : public QObject
     Q_PROPERTY(bool isSplitTunnelingEnabled READ isSplitTunnelingEnabled NOTIFY isSplitTunnelingEnabledChanged)
 
 public:
+    QVariantList treeRules() const;
+    SplitTunnelGroupsUiController *groupsController() const { return m_groupsController; }
     explicit AppSplitTunnelingUiController(AppSplitTunnelingController* appSplitTunnelingController,
                                           AppSplitTunnelingModel* appSplitTunnelingModel,
                                           QObject *parent = nullptr);
@@ -30,6 +35,7 @@ public:
     bool runningAppsLoading() const { return m_runningAppsLoading; }
 
 public slots:
+    void removeRuleByKey(const QString &key);
     void refreshRunningApps();
     void addRunningApps(const QStringList &paths);
     void addApp(const QString &appPath);
@@ -44,6 +50,7 @@ public slots:
     void updateModel();
 
 signals:
+    void treeRulesChanged();
     void runningAppsChanged();
     void runningAppsLoadingChanged();
     void routeModeChanged();
@@ -52,6 +59,7 @@ signals:
     void finished(const QString &message);
 
 private:
+    SplitTunnelGroupsUiController *m_groupsController;
     QVariantList m_runningApps;
     bool m_runningAppsLoading = false;
     AppSplitTunnelingController* m_appSplitTunnelingController;

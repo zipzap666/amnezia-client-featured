@@ -1,4 +1,5 @@
 ﻿#include "core/utils/splitTunnelSession.h"
+#include "core/utils/splitTunnelGroups.h"
 #include <QCoreApplication>
 #include <cstdio>
 #include <cstdlib>
@@ -14,6 +15,28 @@ static QJsonObject rules() {
 }
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
+    check(SplitTunnelGroups::active({}, "legacy.example", false), "legacy sites default enabled and ungrouped");
+    check(SplitTunnelGroups::active({}, "C:/Apps/legacy.exe", true), "legacy apps default enabled and ungrouped");
+    QJsonObject groupState {{"groups", QJsonArray{QJsonObject{{"id", "games"}, {"name", "Games"}, {"enabled", false}}}},
+        {"rules", QJsonObject{{"example.org", QJsonObject{{"groupId", "games"}, {"enabled", true}}},
+                             {"disabled.org", QJsonObject{{"enabled", false}}}}}};
+    check(!SplitTunnelGroups::active(groupState, "EXAMPLE.ORG.", false), "disabled group suppresses active site, with canonical lookup");
+    auto enabledGroups = groupState;
+    enabledGroups["groups"] = QJsonArray{QJsonObject{{"id", "games"}, {"enabled", true}}};
+    check(SplitTunnelGroups::active(enabledGroups, "example.org", false), "reenabling group restores individual switch");
+    check(!SplitTunnelGroups::active(enabledGroups, "disabled.org", false), "group toggle preserves individual disabled state");
+    auto orphan = groupState; orphan["groups"] = QJsonArray{};
+    check(SplitTunnelGroups::active(orphan, "example.org", false), "deleted group falls back to ungrouped");
+    check(SplitTunnelGroups::rule(orphan, "example.org", false).value("groupId").toString().isEmpty(), "orphan metadata displays ungrouped");
+    auto pruned = SplitTunnelGroups::prune(groupState, {"example.org"}, false);
+    check(!pruned.value("rules").toObject().contains("disabled.org"), "removed rules lose stale toggle state");
+    check(pruned.value("groups").toArray().size() == 1, "clearing rules keeps groups");
+    auto ungroupedOff = groupState; ungroupedOff["ungroupedEnabled"] = false;
+    check(!SplitTunnelGroups::active(ungroupedOff, "other.org", false), "ungrouped has independent group switch");
+#ifdef Q_OS_WIN
+    QJsonObject appGroups {{"rules", QJsonObject{{"c:/apps/game.exe", QJsonObject{{"enabled", false}}}}}};
+    check(!SplitTunnelGroups::active(appGroups, "C:\\APPS\\game.EXE", true), "Windows switch keys ignore path case and separators");
+#endif
     auto original = rules();
     SplitTunnelSession session;
     session.save(original);

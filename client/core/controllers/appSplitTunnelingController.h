@@ -10,6 +10,7 @@
 class AppSplitTunnelingController
 {
 public:
+    SecureAppSettingsRepository *settingsRepository() const { return m_appSettingsRepository; }
     explicit AppSplitTunnelingController(SecureAppSettingsRepository* appSettingsRepository);
 
     bool addApp(const amnezia::InstalledAppInfo &appInfo);

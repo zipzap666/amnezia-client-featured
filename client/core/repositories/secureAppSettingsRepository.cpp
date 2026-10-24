@@ -1,4 +1,6 @@
 #include "secureAppSettingsRepository.h"
+#include "core/utils/splitTunnelGroups.h"
+#include "core/utils/splitTunnelCompatibility.h"
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -23,6 +25,7 @@ namespace {
 SecureAppSettingsRepository::SecureAppSettingsRepository(SecureQSettings* settings, QObject *parent)
     : QObject(parent), m_settings(settings)
 {
+    splitTunnelCompatibility().initialize();
     QString storedEndpoint = value("Conf/gatewayEndpoint", gatewayEndpoint).toString();
     m_gatewayEndpoint = storedEndpoint.isEmpty() ? gatewayEndpoint : storedEndpoint;
 }
@@ -93,17 +96,6 @@ void SecureAppSettingsRepository::setSecondaryDns(const QString &dns)
     setValue("Conf/secondaryDns", dns);
 }
 
-namespace {
-    QString routeModeString(RouteMode mode) {
-        switch (mode) {
-        case RouteMode::VpnAllSites: return "AllSites";
-        case RouteMode::VpnOnlyForwardSites: return "ForwardSites";
-        case RouteMode::VpnAllExceptSites: return "ExceptSites";
-        }
-        return QString();
-    }
-}
-
 RouteMode SecureAppSettingsRepository::routeMode() const
 {
     return static_cast<RouteMode>(value("Conf/routeMode", 0).toInt());
@@ -117,7 +109,7 @@ void SecureAppSettingsRepository::setRouteMode(RouteMode mode)
 
 QVariantMap SecureAppSettingsRepository::vpnSites(RouteMode mode) const
 {
-    return value("Conf/" + routeModeString(mode)).toMap();
+    return splitTunnelCompatibility().full(false, int(mode)).toMap();
 }
 
 QStringList SecureAppSettingsRepository::siteIpList(const QVariant &value)
@@ -132,7 +124,7 @@ QStringList SecureAppSettingsRepository::siteIpList(const QVariant &value)
 
 void SecureAppSettingsRepository::setVpnSites(RouteMode mode, const QVariantMap &sites)
 {
-    setValue("Conf/" + routeModeString(mode), sites);
+    splitTunnelCompatibility().writeList(false, int(mode), sites);
 }
 
 bool SecureAppSettingsRepository::addVpnSite(RouteMode mode, const QString &site, const QStringList &ips)
@@ -208,17 +200,6 @@ void SecureAppSettingsRepository::setSitesSplitTunnelingEnabled(bool enabled)
     emit sitesSplitTunnelingEnabledChanged(enabled);
 }
 
-namespace {
-    QString appsRouteModeString(AppsRouteMode mode) {
-        switch (mode) {
-        case AppsRouteMode::VpnAllApps: return "AllApps";
-        case AppsRouteMode::VpnOnlyForwardApps: return "ForwardApps";
-        case AppsRouteMode::VpnAllExceptApps: return "ExceptApps";
-        }
-        return QString();
-    }
-}
-
 AppsRouteMode SecureAppSettingsRepository::appsRouteMode() const
 {
     return static_cast<AppsRouteMode>(value("Conf/appsRouteMode", 0).toInt());
@@ -233,7 +214,7 @@ void SecureAppSettingsRepository::setAppsRouteMode(AppsRouteMode mode)
 QVector<InstalledAppInfo> SecureAppSettingsRepository::vpnApps(AppsRouteMode mode) const
 {
     QVector<InstalledAppInfo> apps;
-    auto appsArray = value("Conf/" + appsRouteModeString(mode)).toJsonArray();
+    auto appsArray = splitTunnelCompatibility().full(true, int(mode)).toJsonArray();
     for (const auto &app : appsArray) {
         InstalledAppInfo appInfo;
         appInfo.appName = app.toObject().value("appName").toString();
@@ -255,7 +236,7 @@ void SecureAppSettingsRepository::setVpnApps(AppsRouteMode mode, const QVector<I
         appInfo.insert("appPath", app.appPath);
         appsArray.push_back(appInfo);
     }
-    setValue("Conf/" + appsRouteModeString(mode), appsArray);
+    splitTunnelCompatibility().writeList(true, int(mode), appsArray);
     emit appsChanged(mode);
 }
 
@@ -459,7 +440,9 @@ QByteArray SecureAppSettingsRepository::backupAppConfig() const
 
 bool SecureAppSettingsRepository::restoreAppConfig(const QByteArray &cfg)
 {
-    return m_settings->restoreAppConfig(cfg);
+    if (!m_settings->restoreAppConfig(cfg)) return false;
+    splitTunnelCompatibility().initialize();
+    return true;
 }
 
 void SecureAppSettingsRepository::clearSettings()
@@ -488,14 +471,39 @@ void SecureAppSettingsRepository::setXraySavedConfigs(const QByteArray &data)
 QJsonObject SecureAppSettingsRepository::splitTunnelSnapshot() const
 {
     QJsonObject sites, apps;
+    const auto compatibility = splitTunnelCompatibility();
     for (int mode = 0; mode <= 2; ++mode) {
-        sites.insert(QString::number(mode), QJsonObject::fromVariantMap(vpnSites(static_cast<RouteMode>(mode))));
+        const auto activeSites = SplitTunnelCompatibility::project(false, compatibility.full(false, mode), compatibility.groups(false, mode));
+        sites.insert(QString::number(mode), QJsonObject::fromVariantMap(activeSites.toMap()));
+        const auto activeApps = SplitTunnelCompatibility::project(true, compatibility.full(true, mode), compatibility.groups(true, mode));
         QJsonArray paths;
-        for (const auto &app : vpnApps(static_cast<AppsRouteMode>(mode)))
-            paths.append(app.appPath.isEmpty() ? app.packageName : app.appPath);
+        for (const auto &entry : activeApps.toJsonArray()) {
+            const auto app = entry.toObject();
+            const auto path = app.value("appPath").toString();
+            paths.append(path.isEmpty() ? app.value("packageName").toString() : path);
+        }
         apps.insert(QString::number(mode), paths);
     }
     return {{"sitesEnabled", isSitesSplitTunnelingEnabled()}, {"siteMode", int(routeMode())},
             {"appsEnabled", isAppsSplitTunnelingEnabled()}, {"appMode", int(appsRouteMode())},
             {"sites", sites}, {"apps", apps}};
+}
+
+QJsonObject SecureAppSettingsRepository::splitTunnelGroups(bool apps, int mode) const
+{
+    return splitTunnelCompatibility().groups(apps, mode);
+}
+
+void SecureAppSettingsRepository::setSplitTunnelGroups(bool apps, int mode, const QJsonObject &state)
+{
+    splitTunnelCompatibility().writeGroups(apps, mode, state);
+    if (apps) emit appsChanged(static_cast<AppsRouteMode>(mode));
+    else emit sitesChanged(static_cast<RouteMode>(mode));
+}
+
+SplitTunnelCompatibility SecureAppSettingsRepository::splitTunnelCompatibility() const
+{
+    return SplitTunnelCompatibility(
+        [settings = m_settings](const QString &key) { return settings->value(key); },
+        [settings = m_settings](const QString &key, const QVariant &data) { settings->setValue(key, data); });
 }

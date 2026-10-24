@@ -17,12 +17,16 @@
 
 using namespace amnezia;
 
+class SplitTunnelCompatibility;
+
 class SecureAppSettingsRepository : public QObject
 {
     Q_OBJECT
 
 public:
     QJsonObject splitTunnelSnapshot() const;
+    QJsonObject splitTunnelGroups(bool apps, int mode) const;
+    void setSplitTunnelGroups(bool apps, int mode, const QJsonObject &state);
     explicit SecureAppSettingsRepository(SecureQSettings* settings, QObject *parent = nullptr);
 
     QLocale getAppLanguage() const;
@@ -116,6 +120,7 @@ signals:
     void settingsCleared();
 
 private:
+    SplitTunnelCompatibility splitTunnelCompatibility() const;
     void setVpnSites(RouteMode mode, const QVariantMap &sites);
     void setInstallationUuid(const QString &uuid);
     

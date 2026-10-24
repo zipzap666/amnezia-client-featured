@@ -91,6 +91,7 @@ PageType {
 
         DropDownType {
             id: selector
+            visible: Qt.platform.os !== "windows"
 
             Layout.fillWidth: true
             Layout.topMargin: 32
@@ -142,15 +143,27 @@ PageType {
             Layout.leftMargin: 16
             Layout.rightMargin: 16
 
-            textString: qsTr("Only \"Apps from the list should not have access via VPN\" mode is available on Windows")
+            textString: qsTr("Only <b>\"Apps from the list should not have access via VPN\"</b> mode is available on Windows")
+            textFormat: Text.RichText
             iconPath: "qrc:/images/controls/alert-circle.svg"
 
             visible: (Qt.platform.os === "windows") && root.pageEnabled
+        }
+        BasicButtonType {
+            Layout.fillWidth: true
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            Layout.topMargin: 12
+            visible: Qt.platform.os === "windows"
+            text: qsTranslate("SplitTunnelTree", "Create group")
+            enabled: root.pageEnabled
+            clickedFunc: function() { ruleTree.createGroup() }
         }
     }
 
     ListViewType {
         id: listView
+        visible: Qt.platform.os !== "windows"
 
         ScrollBar.vertical: ScrollBarType { policy: ScrollBar.AlwaysOn }
 
@@ -166,7 +179,7 @@ PageType {
             sourceModel: AppSplitTunnelingModel
             filters: RegExpFilter {
                 roleName: "appPath"
-                pattern: ".*" + searchField.textField.text + ".*"
+                pattern: Qt.platform.os === "windows" ? "" : ".*" + searchField.textField.text + ".*"
                 caseSensitivity: Qt.CaseInsensitive
             }
             sorters: [
@@ -184,6 +197,8 @@ PageType {
                 Layout.rightMargin: 16
 
                 text: appPath
+                descriptionText: Qt.platform.os === "windows" ? ruleKey : ""
+                hideDescription: Qt.platform.os !== "windows"
                 rightImageSource: "qrc:/images/controls/trash.svg"
                 rightImageColor: AmneziaStyle.color.paleGray
 
@@ -203,6 +218,28 @@ PageType {
             }
 
             DividerType {}
+        }
+    }
+
+    SplitTunnelTree {
+        id: ruleTree
+        anchors.fill: listView
+        visible: Qt.platform.os === "windows"
+        enabled: root.pageEnabled
+        pageRoot: root
+        apps: true
+        controller: AppSplitTunnelingController.groupsController
+        rules: AppSplitTunnelingController.treeRules
+        searchText: searchField.textField.text
+        onRemoveRuleRequested: function(key, name) {
+            showQuestionDrawer(qsTr("Remove ") + name + "?", "", qsTr("Continue"), qsTr("Cancel"),
+                               function() { AppSplitTunnelingController.removeRuleByKey(key) }, function() {})
+        }
+        onRemoveGroupRequested: function(id, name) {
+            showQuestionDrawer(qsTranslate("SplitTunnelTree", "Delete group") + " " + name + "?",
+                               qsTranslate("SplitTunnelTree", "Rules will be moved to Ungrouped."),
+                               qsTr("Continue"), qsTr("Cancel"),
+                               function() { controller.removeGroup(id) }, function() {})
         }
     }
 

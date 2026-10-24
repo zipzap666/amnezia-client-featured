@@ -4001,8 +4001,8 @@ Create one from the current settings.</source>
     </message>
     <message>
         <location filename="../ui/qml/Pages2/PageSettingsAppSplitTunneling.qml" line="154"/>
-        <source>Only &quot;Apps from the list should not have access via VPN&quot; mode is available on Windows</source>
-        <translation>На Windows доступен только режим &quot;Приложения из списка не должны работать через VPN&quot;</translation>
+        <source>Only &lt;b&gt;&quot;Apps from the list should not have access via VPN&quot;&lt;/b&gt; mode is available on Windows</source>
+        <translation>На Windows доступен только режим &lt;b&gt;&quot;Приложения из списка не должны работать через VPN&quot;&lt;/b&gt;</translation>
     </message>
     <message>
         <location filename="../ui/qml/Pages2/PageSettingsAppSplitTunneling.qml" line="200"/>
@@ -7235,5 +7235,31 @@ Remove the server from the app to continue.</source>
     <message><source>Reconnect</source><translation>Переподключить</translation></message>
     <message><source>Reconnecting. The connection will be temporarily interrupted.</source><translation>Переподключение. Соединение временно прервётся.</translation></message>
     <message><source>The VPN connection will be temporarily interrupted.</source><translation>Соединение VPN временно прервётся.</translation></message>
+</context>
+<context>
+    <name>SplitTunnelGroupsUiController</name>
+    <message><source>Ungrouped</source><translation>Без группы</translation></message>
+</context>
+<context>
+    <name>SplitTunnelTree</name>
+    <message><source>Create group</source><translation>Создать группу</translation></message>
+    <message><source>Rename group</source><translation>Переименовать группу</translation></message>
+    <message><source>Delete group</source><translation>Удалить группу</translation></message>
+    <message><source>Move to group</source><translation>Переместить в группу</translation></message>
+    <message><source>Rules will be moved to Ungrouped.</source><translation>Правила будут перенесены в «Без группы».</translation></message>
+    <message><source>Group name</source><translation>Название группы</translation></message>
+    <message><source>Enter a unique group name</source><translation>Введите уникальное название группы</translation></message>
+    <message><source>Save</source><translation>Сохранить</translation></message>
+    <message><source>Cancel</source><translation>Отмена</translation></message>
+    <message><source>No matches</source><translation>Совпадений нет</translation></message>
+    <message><source>Collapse group</source><translation>Свернуть группу</translation></message>
+    <message><source>Expand group</source><translation>Раскрыть группу</translation></message>
+    <message><source>Enable</source><translation>Включить</translation></message>
+    <message><source>Actions</source><translation>Действия</translation></message>
+    <message><source>Remove</source><translation>Удалить</translation></message>
+</context>
+<context>
+    <name>SplitTunnelCompatibility</name>
+    <message><source>Imported rules</source><translation>Импортированные правила</translation></message>
 </context>
 </TS>

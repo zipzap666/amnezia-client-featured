@@ -12,6 +12,7 @@
 #include "utils/testUtils.h"
 #include "vpnConnection.h"
 #include "secureQSettings.h"
+#include "core/utils/splitTunnelCompatibility.h"
 
 using namespace amnezia::test;
 
@@ -73,6 +74,46 @@ private slots:
         QVERIFY2(!importedObj.isEmpty(), "Backup file should contain valid JSON");
         QVERIFY2(!exportedObj.isEmpty(), "Exported backup should contain valid JSON");
 
+        // Migration adds full lists/projections even when importing an old official
+        // backup. Verify every projection before excluding generated metadata from
+        // the comparison of the original backup's keys.
+        for (bool apps : {false, true}) {
+            for (int mode = 0; mode <= 2; ++mode) {
+                const auto legacy = SplitTunnelCompatibility::legacyKey(apps, mode);
+                const auto full = SplitTunnelCompatibility::fullKey(apps, mode);
+                const auto groups = SplitTunnelCompatibility::groupsKey(apps, mode);
+                QVERIFY2(exportedObj.contains(full), "Full split tunneling list must be backed up");
+                const auto projected = SplitTunnelCompatibility::project(apps, exportedObj.value(full).toVariant(),
+                                                                          exportedObj.value(groups).toObject());
+                QVERIFY2(exportedObj.value(legacy) == QJsonValue::fromVariant(projected),
+                         "Official list must match the active full-list projection");
+                const auto legacyValue = exportedObj.value(legacy);
+                if (!importedObj.contains(legacy) && ((legacyValue.isArray() && legacyValue.toArray().isEmpty())
+                    || (legacyValue.isObject() && legacyValue.toObject().isEmpty()))) exportedObj.remove(legacy);
+            }
+        }
+        for (const auto &key : exportedObj.keys()) {
+            if (key.startsWith("Conf/splitGroups/") && !importedObj.contains(key)) exportedObj.remove(key);
+        }
+        // Ordering of app entries is not a routing rule; imported official edits
+        // can be reconciled in canonical path order.
+        const auto sortApps = [](QJsonObject &config, const QString &key) {
+            if (!config.value(key).isArray()) return;
+            QMap<QString, QJsonObject> entries;
+            for (const auto &value : config.value(key).toArray()) {
+                const auto entry = value.toObject();
+                const auto path = entry.value("appPath").toString();
+                entries.insert(SplitTunnelGroups::key(path.isEmpty() ? entry.value("packageName").toString() : path, true), entry);
+            }
+            QJsonArray sorted;
+            for (const auto &entry : entries) sorted.append(entry);
+            config.insert(key, sorted);
+        };
+        for (int mode = 0; mode <= 2; ++mode) {
+            const auto key = SplitTunnelCompatibility::legacyKey(true, mode);
+            sortApps(importedObj, key); sortApps(exportedObj, key);
+        }
+
         // backupAppConfig() injects live platform state on every export
         // (AppPlatform, autoStart, killSwitch...), and restoreAppConfigFromData()
         // normalizes split tunneling / startMinimized / ExceptApps to the current
@@ -81,7 +122,11 @@ private slots:
         const QStringList volatileKeys = { "AppPlatform", "Conf/autoStart", "Conf/killSwitchEnabled",
                                            "Conf/strictKillSwitchEnabled", "Conf/useAmneziaDns",
                                            "Conf/appsSplitTunnelingEnabled", "Conf/sitesSplitTunnelingEnabled",
-                                           "Conf/startMinimized", "Conf/ExceptApps" };
+                                           "Conf/startMinimized", "Conf/ExceptApps",
+                                           SplitTunnelCompatibility::fullKey(true, 2),
+                                           SplitTunnelCompatibility::mirrorKey(true, 2),
+                                           SplitTunnelCompatibility::groupsKey(true, 2),
+                                           SplitTunnelCompatibility::pendingKey(true, 2) };
         for (const QString &key : volatileKeys) {
             importedObj.remove(key);
             exportedObj.remove(key);

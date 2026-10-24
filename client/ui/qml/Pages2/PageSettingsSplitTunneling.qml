@@ -151,10 +151,21 @@ PageType {
                 }
             }
         }
+        BasicButtonType {
+            Layout.fillWidth: true
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            Layout.topMargin: 12
+            visible: Qt.platform.os === "windows"
+            text: qsTranslate("SplitTunnelTree", "Create group")
+            enabled: root.pageEnabled
+            clickedFunc: function() { ruleTree.createGroup() }
+        }
     }
 
     ListViewType {
         id: listView
+        visible: Qt.platform.os !== "windows"
 
         ScrollBar.vertical: ScrollBarType { policy: ScrollBar.AlwaysOn }
 
@@ -175,12 +186,12 @@ PageType {
                 AnyOf {
                     RegExpFilter {
                         roleName: "url"
-                        pattern: ".*" + searchField.textField.text + ".*"
+                        pattern: Qt.platform.os === "windows" ? "" : ".*" + searchField.textField.text + ".*"
                         caseSensitivity: Qt.CaseInsensitive
                     }
                     RegExpFilter {
                         roleName: "ip"
-                        pattern: ".*" + searchField.textField.text + ".*"
+                        pattern: Qt.platform.os === "windows" ? "" : ".*" + searchField.textField.text + ".*"
                         caseSensitivity: Qt.CaseInsensitive
                     }
                 }
@@ -221,6 +232,28 @@ PageType {
             }
 
             DividerType {}
+        }
+    }
+
+    SplitTunnelTree {
+        id: ruleTree
+        anchors.fill: listView
+        visible: Qt.platform.os === "windows"
+        enabled: root.pageEnabled
+        pageRoot: root
+        apps: false
+        controller: IpSplitTunnelingController.groupsController
+        rules: IpSplitTunnelingController.treeRules
+        searchText: searchField.textField.text
+        onRemoveRuleRequested: function(key, name) {
+            showQuestionDrawer(qsTr("Remove ") + name + "?", "", qsTr("Continue"), qsTr("Cancel"),
+                               function() { IpSplitTunnelingController.removeRuleByKey(key) }, function() {})
+        }
+        onRemoveGroupRequested: function(id, name) {
+            showQuestionDrawer(qsTranslate("SplitTunnelTree", "Delete group") + " " + name + "?",
+                               qsTranslate("SplitTunnelTree", "Rules will be moved to Ungrouped."),
+                               qsTr("Continue"), qsTr("Cancel"),
+                               function() { controller.removeGroup(id) }, function() {})
         }
     }
 

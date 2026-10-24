@@ -1,4 +1,5 @@
 #include "appSplitTunnelingUiController.h"
+#include "core/utils/splitTunnelGroups.h"
 
 #include <QFileInfo>
 #include <QFutureWatcher>
@@ -16,7 +17,11 @@ AppSplitTunnelingUiController::AppSplitTunnelingUiController(AppSplitTunnelingCo
       m_appSplitTunnelingController(appSplitTunnelingController),
       m_appSplitTunnelingModel(appSplitTunnelingModel)
 {
+    m_groupsController = new SplitTunnelGroupsUiController(m_appSplitTunnelingController->settingsRepository(), true,
+        [this] { return getRouteMode(); }, this);
+    connect(m_groupsController, &SplitTunnelGroupsUiController::changed, this, &AppSplitTunnelingUiController::updateModel);
     m_appSplitTunnelingModel->updateModel(m_appSplitTunnelingController->getApps());
+    emit treeRulesChanged();
 }
 
 void AppSplitTunnelingUiController::addApp(const QString &appPath)
@@ -78,6 +83,7 @@ bool AppSplitTunnelingUiController::isSplitTunnelingEnabled() const
 void AppSplitTunnelingUiController::updateModel()
 {
     m_appSplitTunnelingModel->updateModel(m_appSplitTunnelingController->getApps());
+    emit treeRulesChanged();
 }
 
 
@@ -118,4 +124,27 @@ void AppSplitTunnelingUiController::addRunningApps(const QStringList &paths)
     }
     emit finished(tr("The selected applications have been added"));
 #endif
+}
+
+QVariantList AppSplitTunnelingUiController::treeRules() const
+{
+    QVariantList result;
+    const auto state = m_groupsController->state();
+    for (const auto &app : m_appSplitTunnelingController->getApps()) {
+        const auto key = app.appPath.isEmpty() ? app.packageName : app.appPath;
+        auto row = SplitTunnelGroups::rule(state, key, true).toVariantMap();
+        row.insert("key", key);
+        row.insert("name", app.appName.isEmpty() ? QFileInfo(key).fileName() : app.appName);
+        row.insert("details", key);
+        result.append(row);
+    }
+    return result;
+}
+void AppSplitTunnelingUiController::removeRuleByKey(const QString &key)
+{
+    const auto apps = m_appSplitTunnelingController->getApps();
+    for (int i = 0; i < apps.size(); ++i) {
+        const auto path = apps[i].appPath.isEmpty() ? apps[i].packageName : apps[i].appPath;
+        if (SplitTunnelGroups::key(path, true) == SplitTunnelGroups::key(key, true)) { removeApp(i); return; }
+    }
 }

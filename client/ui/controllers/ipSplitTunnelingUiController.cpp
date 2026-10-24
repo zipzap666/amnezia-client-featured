@@ -1,4 +1,5 @@
 #include "ipSplitTunnelingUiController.h"
+#include "core/utils/splitTunnelGroups.h"
 
 #include <QDebug>
 
@@ -13,7 +14,11 @@ IpSplitTunnelingUiController::IpSplitTunnelingUiController(IpSplitTunnelingContr
       m_ipSplitTunnelingController(ipSplitTunnelingController),
       m_ipSplitTunnelingModel(ipSplitTunnelingModel)
 {
+    m_groupsController = new SplitTunnelGroupsUiController(m_ipSplitTunnelingController->settingsRepository(), false,
+        [this] { return getRouteMode(); }, this);
+    connect(m_groupsController, &SplitTunnelGroupsUiController::changed, this, &IpSplitTunnelingUiController::updateModel);
     m_ipSplitTunnelingModel->updateModel(m_ipSplitTunnelingController->getCurrentSites());
+    emit treeRulesChanged();
 }
 
 void IpSplitTunnelingUiController::addSite(QString hostname)
@@ -89,4 +94,24 @@ bool IpSplitTunnelingUiController::isSplitTunnelingEnabled() const
 void IpSplitTunnelingUiController::updateModel()
 {
     m_ipSplitTunnelingModel->updateModel(m_ipSplitTunnelingController->getCurrentSites());
+    emit treeRulesChanged();
+}
+
+QVariantList IpSplitTunnelingUiController::treeRules() const
+{
+    QVariantList result;
+    const auto state = m_groupsController->state();
+    for (const auto &site : m_ipSplitTunnelingController->getCurrentSites()) {
+        auto row = SplitTunnelGroups::rule(state, site.first, false).toVariantMap();
+        row.insert("key", site.first);
+        row.insert("name", site.first);
+        row.insert("details", site.second.join(", "));
+        result.append(row);
+    }
+    return result;
+}
+void IpSplitTunnelingUiController::removeRuleByKey(const QString &key)
+{
+    if (m_ipSplitTunnelingController->removeSite(key))
+        emit finished(tr("Site removed: %1").arg(key));
 }

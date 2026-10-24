@@ -16,3 +16,16 @@ add_executable(localSocketDisconnectTests localSocketDisconnect.cpp
 target_include_directories(localSocketDisconnectTests PRIVATE stubs ../../client ../../client/mozilla/shared)
 target_link_libraries(localSocketDisconnectTests PRIVATE Qt6::Core Qt6::Network)
 add_test(NAME localSocketDisconnect COMMAND localSocketDisconnectTests)
+
+find_package(Qt6 REQUIRED COMPONENTS Gui Qml Quick)
+set(CMAKE_AUTORCC ON)
+add_executable(splitTunnelGroupsUiSmoke groupsUiSmoke.cpp ../../client/images/images.qrc)
+target_link_libraries(splitTunnelGroupsUiSmoke PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick)
+get_filename_component(TEST_REPO_PATH "../.." ABSOLUTE)
+target_compile_definitions(splitTunnelGroupsUiSmoke PRIVATE REPO_PATH="${TEST_REPO_PATH}")
+add_test(NAME splitTunnelGroupsUiSmoke COMMAND splitTunnelGroupsUiSmoke -platform offscreen)
+
+add_executable(splitTunnelCompatibilityTests compatibility.cpp)
+target_include_directories(splitTunnelCompatibilityTests PRIVATE ../../client)
+target_link_libraries(splitTunnelCompatibilityTests PRIVATE Qt6::Core Qt6::Network)
+add_test(NAME splitTunnelCompatibility COMMAND splitTunnelCompatibilityTests)

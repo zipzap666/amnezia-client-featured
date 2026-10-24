@@ -77,3 +77,52 @@ first (its previously confirmed interaction with split tunneling is independent 
 
 Full UI navigation, real VPN routing, real network/wakeup recovery and other platforms require
 manual testing. Unit tests and a successful Windows Release build do not establish those results.
+
+Group tree controls (Windows)
+-----------------------------
+The settings repository keeps per-mode group metadata separately from original
+app/site lists. Missing metadata means enabled and Ungrouped. Only enabled rules
+in enabled groups enter connection snapshots. Names/group identifiers do not
+enter snapshots. Rule removal prunes metadata; deleting a group keeps its rules
+and individual switches. Site-list JSON import/export keeps its existing format.
+
+Windows uses a shared tree component for apps and sites. Existing flat models
+and the Android chooser are retained. New rules are added to Ungrouped and moved
+using the dedicated folder-input button. Group headers retain their actions menu. Groups (including Ungrouped and newly created groups) start collapsed.
+Search is literal, checks name/path/IP, temporarily expands
+matching groups and restores collapsed groups on clearing. Destructive actions
+use stable keys rather than row indexes which may change during confirmation.
+
+The offscreen test uses actual QML with mocked controllers, matching style and
+resources; it does not open the VPN client or access user settings. It checks
+both kinds of rules, collapse/expand, search/restore, deleted-group fallback,
+create/action/move drawers, direct picker opening from the rule button, destination selection, aligned switches
+and row bounds at width 360.
+Any QML warnings fail the test. Rendered images are saved to
+.build-tools/split-tree-ui for visual inspection.
+
+Manual verification still required: complete pages with real saved rules,
+create/rename/delete persistence, toggles and reconnect with actual network
+traffic. Android has not been built or exercised in this Windows environment.
+
+Official 5.0.3.0 compatibility
+-----------------------------
+The official keys Conf/{All,Forward,Except}{Apps,Sites} contain the active flat
+projection. Group metadata stays under Conf/splitGroups/{apps,sites}/MODE;
+complete editable lists live under Conf/splitGroups/lists/v1, and the previous
+projection under Conf/splitGroups/published/v1. All are included in existing
+Conf backups. Missing full data migrates from legacy keys without losing
+inactive records from earlier custom builds.
+
+On startup/restore, official changes are compared to the previous projection:
+active removals are honored, additions and DNS cache updates are merged, and
+previously inactive rules survive. Explicitly re-added rules are activated
+individually. If Ungrouped is disabled, a separate enabled import group avoids
+waking unrelated rules. A publishing marker repairs interrupted writes instead
+of misinterpreting a partial projection as official deletions.
+
+The compatibility test uses the production projection/reconciliation code with
+real QSettings in a QTemporaryDir. It reads legacy keys exactly as official
+5.0.3.0 does, reopens them from disk and simulates its edits and JSON backups.
+It does not access the installed client, service, VPN, or user settings.
+A real downgrade/reinstall with the official client remains a manual check.

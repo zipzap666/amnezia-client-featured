@@ -35,7 +35,7 @@ PageType {
         }
 
         function onGoToPageSettings() {
-            tabBar.setCurrentIndex(2)
+            tabBar.setCurrentIndex(tabBar.settingsIndex)
             tabBarStackView.goToTabBarPage(PageEnum.PageSettings)
         }
 
@@ -96,6 +96,7 @@ PageType {
 
             var pageName = tabBarStackView.currentItem.objectName
             if ((pageName === PageController.getPagePath(PageEnum.PageShare)) ||
+                    (pageName === PageController.getPagePath(PageEnum.PageStatistics) && tabBarStackView.depth <= 1) ||
                     (pageName === PageController.getPagePath(PageEnum.PageSettings)) ||
                     (pageName === PageController.getPagePath(PageEnum.PageSetupWizardConfigSource))) {
                 PageController.goToPageHome()
@@ -319,6 +320,13 @@ PageType {
     TabBar {
         id: tabBar
         objectName: "tabBar"
+        readonly property int statisticsIndex: 2
+        readonly property int settingsIndex: Qt.platform.os === "windows" ? 3 : 2
+        readonly property int addIndex: Qt.platform.os === "windows" ? 4 : 3
+
+        Component.onCompleted: {
+            if (Qt.platform.os === "windows") moveItem(4, statisticsIndex)
+        }
 
         anchors.right: parent.right
         anchors.left: parent.left
@@ -329,8 +337,8 @@ PageType {
 
         topPadding: 8
         bottomPadding: 8 + PageController.safeAreaBottomMargin
-        leftPadding: 96
-        rightPadding: 96
+        leftPadding: Qt.platform.os === "windows" ? Math.min(96, Math.max(16, (width - 5 * 44 - 4 * spacing) / 2)) : 96
+        rightPadding: leftPadding
 
         height: visible ? homeTabButton.implicitHeight + tabBar.topPadding + tabBar.bottomPadding : 0
 
@@ -401,7 +409,7 @@ PageType {
             id: settingsTabButton
             objectName: "settingsTabButton"
 
-            isSelected: tabBar.currentIndex === 2
+            isSelected: tabBar.currentIndex === tabBar.settingsIndex
             image: (ServersUiController.hasServersFromGatewayApi && NewsModel.hasUnread && SettingsController.isNewsNotificationsEnabled()) ? "qrc:/images/controls/settings-news.svg" : "qrc:/images/controls/settings.svg"
             Binding {
                 target: settingsTabButton
@@ -411,7 +419,7 @@ PageType {
             }
             clickedFunc: function () {
                 tabBarStackView.goToTabBarPage(PageEnum.PageSettings)
-                tabBar.currentIndex = 2
+                tabBar.currentIndex = tabBar.settingsIndex
             }
         }
 
@@ -419,11 +427,29 @@ PageType {
             id: plusTabButton
             objectName: "plusTabButton"
 
-            isSelected: tabBar.currentIndex === 3
+            isSelected: tabBar.currentIndex === tabBar.addIndex
             image: "qrc:/images/controls/plus.svg"
             clickedFunc: function () {
                 tabBarStackView.goToTabBarPage(PageEnum.PageSetupWizardConfigSource)
-                tabBar.currentIndex = 3
+                tabBar.currentIndex = tabBar.addIndex
+            }
+        }
+
+        TabImageButtonType {
+            id: statisticsTabButton
+            objectName: "statisticsTabButton"
+
+            visible: Qt.platform.os === "windows"
+            width: visible ? undefined : 0
+            isSelected: tabBar.currentIndex === tabBar.statisticsIndex
+            image: "qrc:/images/controls/chart-function.svg"
+            Accessible.name: qsTr("Statistics")
+            ToolTip.visible: hovered
+            ToolTip.delay: 500
+            ToolTip.text: qsTr("Statistics")
+            clickedFunc: function () {
+                tabBarStackView.goToTabBarPage(PageEnum.PageStatistics)
+                tabBar.currentIndex = tabBar.statisticsIndex
             }
         }
     }

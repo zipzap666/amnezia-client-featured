@@ -5889,6 +5889,10 @@ Create one from the current settings.</source>
         <source>Logging is enabled. Note that logs will be automaticallydisabled after 14 days, and all log files will be deleted.</source>
         <translation>Логирование включено. Обратите внимание, что через 14 дней оно будет автоматически отключено, а все файлы логов будут удалены.</translation>
     </message>
+    <message>
+        <source>Statistics</source>
+        <translation>Статистика</translation>
+    </message>
 </context>
 <context>
     <name>PageUpdate</name>
@@ -7261,5 +7265,119 @@ Remove the server from the app to continue.</source>
 <context>
     <name>SplitTunnelCompatibility</name>
     <message><source>Imported rules</source><translation>Импортированные правила</translation></message>
+</context>
+<context>
+    <name>PageStatistics</name>
+    <message>
+        <source>Disconnected</source>
+        <translation>Отключено</translation>
+    </message>
+    <message>
+        <source>Statistics</source>
+        <translation>Статистика</translation>
+    </message>
+    <message>
+        <source>VPN state: </source>
+        <translation>Состояние VPN: </translation>
+    </message>
+    <message>
+        <source>60 seconds</source>
+        <translation>60 секунд</translation>
+    </message>
+    <message>
+        <source>5 minutes</source>
+        <translation>5 минут</translation>
+    </message>
+    <message>
+        <source> GiB</source>
+        <translation> ГиБ</translation>
+    </message>
+    <message>
+        <source> MiB</source>
+        <translation> МиБ</translation>
+    </message>
+    <message>
+        <source> KiB</source>
+        <translation> КиБ</translation>
+    </message>
+    <message>
+        <source> B</source>
+        <translation> Б</translation>
+    </message>
+    <message>
+        <source>/s</source>
+        <translation>/с</translation>
+    </message>
+    <message>
+        <source>Through VPN</source>
+        <translation>Через VPN</translation>
+    </message>
+    <message>
+        <source>Physical adapters total</source>
+        <translation>Всего на физических адаптерах</translation>
+    </message>
+    <message>
+        <source>Receiving data</source>
+        <translation>Данные поступают</translation>
+    </message>
+    <message>
+        <source>Data unavailable / waiting for counters</source>
+        <translation>Данные недоступны / ожидание счётчиков</translation>
+    </message>
+    <message>
+        <source>IN · Receive: </source>
+        <translation>IN · Получение: </translation>
+    </message>
+    <message>
+        <source>OUT · Send: </source>
+        <translation>OUT · Отправка: </translation>
+    </message>
+    <message>
+        <source>Received: </source>
+        <translation>Получено: </translation>
+    </message>
+    <message>
+        <source>Sent: </source>
+        <translation>Отправлено: </translation>
+    </message>
+    <message>
+        <source>Outside VPN: unavailable. Physical counters include encrypted VPN traffic, overhead and LAN traffic. Subtracting tunnel counters cannot reliably measure bypass traffic, including with split tunneling.</source>
+        <translation>В обход VPN: недоступно. Физические счётчики включают зашифрованный VPN-трафик, накладные расходы и локальную сеть. Вычитание счётчиков туннеля не даёт достоверного трафика в обход VPN, в том числе при раздельном туннелировании.</translation>
+    </message>
+    <message>
+        <source>VPN: OpenVPN management counters or WireGuard/AmneziaWG peer counters. Other protocols: unavailable. Physical: active hardware adapters only; virtual adapters excluded. These graphs measure different layers and must not be added together.</source>
+        <translation>VPN: счётчики управления OpenVPN или счётчики peer WireGuard/AmneziaWG. Другие протоколы: недоступно. Общий трафик: только активные физические адаптеры, без виртуальных. Графики измеряют разные уровни; их нельзя складывать.</translation>
+    </message>
+    <message>
+        <source>Volumes count observed intervals since statistics reset or application start. VPN volumes restart on connection state changes. Missing intervals are excluded; gaps indicate unavailable data. History stays in memory for up to 5 minutes.</source>
+        <translation>Объёмы учитывают измеренные интервалы с момента сброса статистики или запуска приложения. Объёмы VPN сбрасываются при изменении состояния подключения. Пропущенные интервалы исключены; разрывы означают отсутствие данных. История хранится в памяти до 5 минут.</translation>
+    </message>
+    <message>
+        <source>Reset statistics</source>
+        <translation>Сбросить статистику</translation>
+    </message>
+    <message>
+        <source>All adapter traffic</source>
+        <translation>Весь трафик адаптеров</translation>
+    </message>
+    <message>
+        <source>Includes VPN and local network traffic</source>
+        <translation>Включает VPN и локальную сеть</translation>
+    </message>
+    <message>
+        <source>How traffic is measured</source>
+        <translation>Как считаем трафик</translation>
+    </message>
+</context>
+<context>
+    <name>TrafficChart</name>
+    <message>
+        <source> s</source>
+        <translation> с</translation>
+    </message>
+    <message>
+        <source>Now</source>
+        <translation>Сейчас</translation>
+    </message>
 </context>
 </TS>

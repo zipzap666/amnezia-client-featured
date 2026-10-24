@@ -6,6 +6,7 @@
 #include <QString>
 #include <QTemporaryFile>
 #include <QTimer>
+#include <QElapsedTimer>
 
 #include "vpnProtocol.h"
 
@@ -28,6 +29,11 @@ public:
 private:
 
     QScopedPointer<ControllerImpl> m_impl;
+#ifdef Q_OS_WIN
+    bool m_statisticsPending = false;
+    quint64 m_statisticsEpoch = 0, m_statisticsRequestEpoch = 0;
+    QElapsedTimer m_statisticsRequest;
+#endif
 };
 
 #endif // WIREGUARDPROTOCOL_H

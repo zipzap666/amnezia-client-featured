@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/ui/qml">
+        <file>Pages2/PageStatistics.qml</file>
+        <file>Components/TrafficChart.qml</file>
         <file>Components/UpdateSupportDrawer.qml</file>
         <file>Components/AdLabel.qml</file>
         <file>Components/ConnectButton.qml</file>

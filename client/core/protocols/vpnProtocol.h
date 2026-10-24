@@ -73,6 +73,7 @@ public:
     static VpnProtocol* factory(amnezia::DockerContainer container, const QJsonObject &configuration);
 
 signals:
+    void trafficCounters(quint64 receivedBytes, quint64 sentBytes);
     void bytesChanged(quint64 receivedBytes, quint64 sentBytes);
     void connectionStateChanged(Vpn::ConnectionState state);
     void timeoutTimerEvent();

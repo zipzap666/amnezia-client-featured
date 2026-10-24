@@ -3,6 +3,7 @@
 #include <QProcess>
 #include <QTcpSocket>
 #include <QThread>
+#include <QTimer>
 
 #include "wireGuardProtocol.h"
 #include "core/utils/networkUtilities.h"
@@ -13,6 +14,20 @@ WireguardProtocol::WireguardProtocol(const QJsonObject &configuration, QObject *
     : VpnProtocol(configuration, parent)
 {
     m_impl.reset(new LocalSocketController());
+#ifdef Q_OS_WIN
+    auto *statisticsTimer = new QTimer(this);
+    statisticsTimer->setInterval(1000);
+    connect(this, &VpnProtocol::connectionStateChanged, this, [this] { ++m_statisticsEpoch; });
+    connect(statisticsTimer, &QTimer::timeout, this, [this] {
+        if (m_connectionState == Vpn::Connected && !m_statisticsPending) {
+            m_statisticsPending = true;
+            m_statisticsRequestEpoch = m_statisticsEpoch;
+            m_statisticsRequest.start();
+            m_impl->checkStatus();
+        }
+    });
+    statisticsTimer->start();
+#endif
     connect(m_impl.get(), &ControllerImpl::connected, this,
             [this](const QString &pubkey, const QDateTime &connectionTimestamp) {
                 setConnectionState(Vpn::ConnectionState::Connected);
@@ -21,6 +36,16 @@ WireguardProtocol::WireguardProtocol(const QJsonObject &configuration, QObject *
             [this](const QString& serverIpv4Gateway,
                    const QString& deviceIpv4Address, uint64_t txBytes,
                    uint64_t rxBytes) {
+#ifdef Q_OS_WIN
+                // The Windows daemon returns cumulative UAPI peer counters.
+                // Ignore LocalSocketController's synthetic address-only update.
+                if (m_statisticsPending && !serverIpv4Gateway.isEmpty()) {
+                    m_statisticsPending = false;
+                    if (m_connectionState == Vpn::Connected && m_statisticsRequestEpoch == m_statisticsEpoch
+                        && m_statisticsRequest.elapsed() <= 3000)
+                        emit trafficCounters(rxBytes, txBytes);
+                }
+#endif
                 const QString previousGateway = m_vpnGateway;
                 const QString previousLocal = m_vpnLocalAddress;
 
@@ -39,6 +64,10 @@ WireguardProtocol::WireguardProtocol(const QJsonObject &configuration, QObject *
 
     connect(m_impl.get(), &ControllerImpl::disconnected, this,
             [this]() {
+#ifdef Q_OS_WIN
+                // The disconnect acknowledgement drains earlier socket replies.
+                m_statisticsPending = false;
+#endif
                 if (m_connectionState == Vpn::Connecting || m_connectionState == Vpn::Reconnecting)
                     setLastError(ErrorCode::AmneziaServiceConnectionFailed);
                 else

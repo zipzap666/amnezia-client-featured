@@ -1,4 +1,5 @@
 #include "coreController.h"
+#include "ui/controllers/trafficStatisticsController.h"
 
 #include <QDirIterator>
 #include <QTranslator>
@@ -173,6 +174,9 @@ void CoreController::initCoreControllers()
 
 void CoreController::initControllers()
 {
+#ifdef Q_OS_WIN
+    setQmlContextProperty("TrafficStatistics", new TrafficStatisticsController(m_vpnConnection.get(), this));
+#endif
     m_connectionUiController = new ConnectionUiController(m_connectionController, m_serversController, this);
     setQmlContextProperty("ConnectionController", m_connectionUiController);
 

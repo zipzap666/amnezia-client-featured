@@ -3,6 +3,7 @@
         <file>../fonts/pt-root-ui_vf.ttf</file>
     </qresource>
     <qresource prefix="/images">
+        <file>controls/chart-function.svg</file>
         <file>amneziaBigLogo.png</file>
         <file>AmneziaVPN.png</file>
         <file>controls/alert-circle.svg</file>

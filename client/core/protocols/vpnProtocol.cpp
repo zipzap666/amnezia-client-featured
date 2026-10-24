@@ -66,8 +66,14 @@ Vpn::ConnectionState VpnProtocol::connectionState() const
 
 void VpnProtocol::setBytesChanged(quint64 receivedBytes, quint64 sentBytes)
 {
+#ifdef Q_OS_WIN
+    quint64 rxDiff = receivedBytes >= m_receivedBytes ? receivedBytes - m_receivedBytes : 0;
+    quint64 txDiff = sentBytes >= m_sentBytes ? sentBytes - m_sentBytes : 0;
+    emit trafficCounters(receivedBytes, sentBytes);
+#else
     quint64 rxDiff = receivedBytes - m_receivedBytes;
     quint64 txDiff = sentBytes - m_sentBytes;
+#endif
 
     emit bytesChanged(rxDiff, txDiff);
 

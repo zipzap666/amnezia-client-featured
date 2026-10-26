@@ -107,16 +107,23 @@ func launch(ctx context.Context, c command) error {
 			}
 		}
 	}()
-	unavailable := false
+	monitor := tunnelHealth{}
+	var lastPeerRx uint64
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case ok := <-health:
-			if connected && unavailable == ok {
-				unavailable = !ok
+			if !connected {
+				continue
+			}
+			changed, received := monitor.observe(ok, lastPeerRx)
+			if !ok {
+				emit(c.Session, "health", map[string]any{"dnsOk": false, "failedChecks": monitor.failures, "peerRxAdvanced": received})
+			}
+			if changed {
 				kind := "available"
-				if unavailable {
+				if monitor.unavailable {
 					kind = "unavailable"
 				}
 				emit(c.Session, kind, nil)
@@ -145,11 +152,13 @@ func launch(ctx context.Context, c command) error {
 					peerTx, _ = strconv.ParseUint(strings.TrimPrefix(line, "tx_bytes="), 10, 64)
 				}
 			}
+			lastPeerRx = peerRx
 			if !connected && handshake {
 				if e = s.startListeners(c.HTTP, c.SOCKS); e != nil {
 					return e
 				}
 				connected = true
+				monitor.lastRx = peerRx
 				emit(c.Session, "ready", nil)
 			}
 			if connected {

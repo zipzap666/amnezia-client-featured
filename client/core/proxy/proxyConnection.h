@@ -7,6 +7,7 @@
 #include <QElapsedTimer>
 #include "core/protocols/vpnProtocol.h"
 #include "windowsSystemProxyManager.h"
+#include "helperDiagnostics.h"
 
 class ProxyConnection : public QObject {
     Q_OBJECT
@@ -34,6 +35,7 @@ private:
     void consume();
     void launch();
     void recover();
+    HelperDiagnostics m_diagnostics;
     QProcess m_process;
     QTimer m_timeout, m_networkDebounce;
     QTimer m_resumeTimer;

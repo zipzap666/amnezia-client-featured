@@ -1,5 +1,6 @@
 #include "proxyConnection.h"
 #include <QCoreApplication>
+#include <QDebug>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -17,7 +18,10 @@ ProxyConnection::ProxyConnection(QObject *parent, QString helperPath, QString jo
     m_lastTick.start(); m_resumeTimer.setInterval(5000);
     connect(&m_resumeTimer, &QTimer::timeout, this, [this] {
         const bool resumed = m_lastTick.restart() > 20000;
-        if (resumed && running() && !m_stopping) m_networkDebounce.start();
+        if (resumed && running() && !m_stopping) {
+            qInfo() << "AWG proxy: resume detected; scheduling recovery";
+            m_networkDebounce.start();
+        }
     });
     m_resumeTimer.start();
     m_timeout.setSingleShot(true); m_timeout.setInterval(30000);
@@ -26,19 +30,32 @@ ProxyConnection::ProxyConnection(QObject *parent, QString helperPath, QString jo
     connect(&m_networkDebounce, &QTimer::timeout, this, &ProxyConnection::recover);
     QNetworkInformation::loadDefaultBackend();
     if (auto *network = QNetworkInformation::instance()) {
-        connect(network, &QNetworkInformation::reachabilityChanged, this, [this] { if (running() && !m_stopping) m_networkDebounce.start(); });
-        connect(network, &QNetworkInformation::transportMediumChanged, this, [this] { if (running() && !m_stopping) m_networkDebounce.start(); });
+        connect(network, &QNetworkInformation::reachabilityChanged, this, [this](QNetworkInformation::Reachability value) {
+            qInfo() << "AWG proxy: network reachability" << int(value);
+            if (running() && !m_stopping) m_networkDebounce.start();
+        });
+        connect(network, &QNetworkInformation::transportMediumChanged, this, [this](QNetworkInformation::TransportMedium value) {
+            qInfo() << "AWG proxy: network transport" << int(value);
+            if (running() && !m_stopping) m_networkDebounce.start();
+        });
     }
     connect(&m_process, &QProcess::readyReadStandardOutput, this, &ProxyConnection::consume);
-    connect(&m_process, &QProcess::readyReadStandardError, this, [this] { m_process.readAllStandardError(); });
+    connect(&m_process, &QProcess::readyReadStandardError, this, [this] { m_diagnostics.feed(m_process.readAllStandardError()); });
     connect(&m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
+        qWarning() << "AWG proxy: process error" << int(error);
         if (!m_stopping && !m_recovering && error == QProcess::FailedToStart) fail(tr("Cannot start the AWG proxy helper."));
     });
-    connect(&m_process, &QProcess::finished, this, [this] {
+    connect(&m_process, &QProcess::finished, this, [this](int code, QProcess::ExitStatus status) {
+        m_diagnostics.feed(m_process.readAllStandardError());
+        qInfo() << "AWG proxy: helper finished; exitCode=" << code << "exitStatus=" << int(status)
+                << "stopping=" << m_stopping << "recovering=" << m_recovering
+                << "panic=" << m_diagnostics.panic << "fatal=" << m_diagnostics.fatal
+                << "frames=" << m_diagnostics.frames;
         m_timeout.stop(); m_ready = false;
         if (!m_stopping && !m_recovering) fail(tr("AWG proxy stopped unexpectedly. System proxy settings are retained."));
     });
     connect(&m_process, &QProcess::started, this, [this] {
+        qInfo() << "AWG proxy: helper started; pid=" << m_process.processId();
 #ifdef Q_OS_WIN
         m_job = CreateJobObjectW(nullptr, nullptr);
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {};
@@ -126,6 +143,8 @@ void ProxyConnection::start(const QJsonObject &configuration, const QJsonObject 
     launch();
 }
 void ProxyConnection::launch() {
+    qInfo() << "AWG proxy: launching helper";
+    m_diagnostics = {};
     m_stopping = false; m_ready = false; m_error.clear(); m_counters.clear(); m_buffer.clear();
     m_session = QUuid::createUuid().toString(QUuid::WithoutBraces); m_command["session"] = m_session;
     emit stateChanged(Vpn::Connecting); emit changed();
@@ -147,10 +166,18 @@ void ProxyConnection::consume() {
         if (message.value("session").toString() != m_session || m_stopping) continue;
         if (message.value("version").toInt() != 1) { fail(tr("Incompatible proxy helper.")); return; }
         const auto type = message.value("type").toString();
+        if (type == "health") {
+            qWarning() << "AWG proxy: DNS probe failed; consecutiveChecksWithoutRx="
+                       << message.value("failedChecks").toInt()
+                       << "peerRxAdvanced=" << message.value("peerRxAdvanced").toBool();
+            continue;
+        }
         if (type == "unavailable") {
+            qWarning() << "AWG proxy: repeated DNS probe failures without authenticated peer traffic";
             m_ready = false;
             emit stateChanged(Vpn::Reconnecting); emit changed();
         } else if (type == "ready" || type == "available") {
+            qInfo() << "AWG proxy: helper event" << type;
             m_timeout.stop();
             const int port = m_settings.value("httpPort").toInt();
             const bool automatic = m_settings.value("systemProxy").toBool();
@@ -162,6 +189,7 @@ void ProxyConnection::consume() {
             }
             m_ready = true; emit stateChanged(Vpn::Connected); emit changed();
         } else if (type == "error") {
+            qWarning() << "AWG proxy: helper reported an error";
             fail(tr("AWG proxy: %1").arg(message.value("message").toString())); return;
         } else if (type == "counters" && m_ready) {
             m_counters = message.toVariantMap(); emit changed();
@@ -170,12 +198,14 @@ void ProxyConnection::consume() {
     }
 }
 void ProxyConnection::fail(const QString &message) {
+    qWarning() << "AWG proxy: connection failed; helperRunning=" << running();
     m_error = message; m_ready = false; m_timeout.stop(); m_networkDebounce.stop();
     m_stopping = true;
     if (running()) { m_process.kill(); m_process.waitForFinished(3000); }
     emit stateChanged(Vpn::Error); emit changed(); emit failed(message);
 }
 bool ProxyConnection::stop() {
+    qInfo() << "AWG proxy: explicit stop; helperRunning=" << running();
     m_networkDebounce.stop(); m_timeout.stop();
     if (!m_system.restore()) { m_error = m_system.error(); emit changed(); emit failed(m_error); return false; }
     m_stopping = true; m_ready = false; emit stateChanged(Vpn::Disconnecting);
@@ -188,6 +218,7 @@ bool ProxyConnection::stop() {
 }
 void ProxyConnection::recover() {
     if (!running() || m_stopping) return;
+    qInfo() << "AWG proxy: restarting helper after network or resume event";
     m_recovering = true; m_ready = false;
     emit stateChanged(Vpn::Reconnecting);
     m_process.kill();

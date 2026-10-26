@@ -23,9 +23,15 @@ command is `start` with `native`, `dns`, `httpPort`, `socksPort`, and `rules`
 EOF terminates the helper. Never log commands: `native` contains private keys.
 
 Events: `ready` (listeners and handshake), `unavailable` / `available`
-(tunnel DNS health), `counters`, and `error`. Counters contain stream `rx` /
+(tunnel health), `health` (failed probe diagnostics), `counters`, and `error`. Counters contain stream `rx` /
 `tx`, `directRx` / `directTx`, and separate AWG `peerRx` / `peerTx` values.
 Upstream UAPI output contains private keys and must never be forwarded.
+
+After startup, one failed DNS probe does not change connection state. The helper
+requires three consecutive failed probes (15-second interval, 6-second timeout)
+without incoming authenticated AWG traffic before emitting `unavailable`.
+A successful probe or fresh peer traffic restores availability. Listeners and
+the selected routes remain intact during an outage; there is no direct fallback.
 
 HTTP forwarding and HTTPS CONNECT do not terminate browser TLS. SOCKS5
 supports unauthenticated TCP CONNECT on loopback only; BIND and UDP ASSOCIATE

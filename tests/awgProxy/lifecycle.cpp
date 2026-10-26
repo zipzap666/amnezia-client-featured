@@ -20,6 +20,15 @@ int main(int argc,char **argv) {
         loop.exec();QObject::disconnect(connection);if(state!=wanted)qFatal("Proxy lifecycle timed out");
     };
     auto check=[](bool value){if(!value)qFatal("Proxy lifecycle invariant failed");};
+    HelperDiagnostics diagnostics;
+    diagnostics.feed("panic: PRIVATE_KEY_MUST_NOT_BE_LOGGED\n"
+                     "gvisor.dev/gvisor/pkg/tcpip/transport/tcp.(*sender).sendData(SECRET_ARGUMENT)\n"
+                     "\tC:/private/SECRET_FILE.go:123\n");
+    check(diagnostics.panic && !diagnostics.fatal);
+    check(diagnostics.frames == QStringList{"gvisor.dev/gvisor/pkg/tcpip/transport/tcp.(*sender).sendData"});
+    check(!diagnostics.frames.join(' ').contains("SECRET"));
+    diagnostics.feed(QByteArray(100000, 'x'));
+    check(diagnostics.bytes <= 65536 && diagnostics.pending.isEmpty());
     proxy.start(config(""),settings);waitFor(Vpn::Connected);check(proxy.running());check(!proxy.recoveryPending());
     check(proxy.stop());check(state==Vpn::Disconnected);check(!proxy.running());
     proxy.start(config("#crash"),settings);waitFor(Vpn::Error);check(!proxy.running());check(!proxy.error().isEmpty());

@@ -164,6 +164,39 @@ PageType {
                 Layout.alignment: Qt.AlignCenter
             }
 
+            RowLayout {
+                visible: Qt.platform.os === "windows"
+                Layout.alignment: Qt.AlignHCenter
+                enabled: !ConnectionController.isConnectionInProgress
+                Repeater {
+                    model: [qsTr("VPN"), qsTr("Proxy")]
+                    BasicButtonType {
+                        required property int index
+                        required property string modelData
+                        text: modelData
+                        implicitWidth: 108
+                        implicitHeight: 36
+                        opacity: ConnectionController.proxyMode === (index === 1) ? 1 : 0.5
+                        enabled: index === 0 || ConnectionController.proxyAvailable || ConnectionController.proxyMode
+                        clickedFunc: function() {
+                            const proxy = index === 1
+                            if (proxy === ConnectionController.proxyMode) return
+                            if (ConnectionController.isConnected) {
+                                showQuestionDrawer(qsTr("Change connection mode?"), qsTr("The current connection will be stopped and reconnected in the selected mode."),
+                                                   qsTr("Reconnect"), qsTr("Cancel"), function() { ConnectionController.selectProxyMode(proxy) }, function() {})
+                            } else ConnectionController.selectProxyMode(proxy)
+                        }
+                    }
+                }
+            }
+            ParagraphTextType {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                horizontalAlignment: Text.AlignHCenter
+                visible: ConnectionController.proxyRecoveryPending && !ConnectionController.isConnected
+                text: qsTr("System proxy is retained. Reconnect or open settings to disconnect and restore Windows.")
+            }
             BasicButtonType {
                 id: splitTunnelingButton
                 objectName: "splitTunnelingButton"
@@ -185,8 +218,10 @@ PageType {
                 buttonTextLabel.font.pixelSize: 14
                 buttonTextLabel.font.weight: 500
 
-                property bool isSplitTunnelingEnabled: IpSplitTunnelingController.isSplitTunnelingEnabled || AppSplitTunnelingController.isSplitTunnelingEnabled ||
-                                                       ServersUiController.isDefaultServerDefaultContainerHasSplitTunneling
+                property bool isSplitTunnelingEnabled: IpSplitTunnelingController.isSplitTunnelingEnabled ||
+                                                       (!ConnectionController.proxyMode &&
+                                                        (AppSplitTunnelingController.isSplitTunnelingEnabled ||
+                                                         ServersUiController.isDefaultServerDefaultContainerHasSplitTunneling))
 
                 text: isSplitTunnelingEnabled ? qsTr("Split tunneling enabled") : qsTr("Split tunneling disabled")
 

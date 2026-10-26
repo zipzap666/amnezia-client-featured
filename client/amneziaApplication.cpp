@@ -15,6 +15,7 @@
 #include <QEvent>
 #include <QDir>
 #include <QSettings>
+#include <QNetworkProxy>
 #include <QtQuick/QQuickWindow>  
 #include <QWindow>     
 
@@ -66,6 +67,9 @@ AmneziaApplication::AmneziaApplication(int &argc, char *argv[]) : AMNEZIA_BASE_C
 
     m_settings = new SecureQSettings(ORGANIZATION_NAME, APPLICATION_NAME, this);
     m_nam = new QNetworkAccessManager(this);
+    // Control-plane requests must never recurse through our own local proxy.
+    QNetworkProxy::setApplicationProxy(QNetworkProxy::NoProxy);
+    m_nam->setProxy(QNetworkProxy::NoProxy);
 }
 
 AmneziaApplication::~AmneziaApplication()
@@ -74,7 +78,8 @@ AmneziaApplication::~AmneziaApplication()
     if (m_vpnConnection && m_vpnConnectionThread.isRunning()) {
         QMetaObject::invokeMethod(m_vpnConnection.get(), "disconnectSlots", Qt::BlockingQueuedConnection);
         
-        QMetaObject::invokeMethod(m_vpnConnection.get(), "disconnectFromVpn", Qt::BlockingQueuedConnection);
+        if (!m_coreController || !m_coreController->isProxyMode())
+            QMetaObject::invokeMethod(m_vpnConnection.get(), "disconnectFromVpn", Qt::BlockingQueuedConnection);
     }
 #endif
 

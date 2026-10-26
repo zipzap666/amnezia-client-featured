@@ -9,6 +9,7 @@
 #include "core/utils/networkUtilities.h"
 
 #include "mozilla/localsocketcontroller.h"
+#include "daemon/daemonerrors.h"
 
 WireguardProtocol::WireguardProtocol(const QJsonObject &configuration, QObject *parent)
     : VpnProtocol(configuration, parent)
@@ -73,8 +74,13 @@ WireguardProtocol::WireguardProtocol(const QJsonObject &configuration, QObject *
                 else
                     setConnectionState(Vpn::ConnectionState::Disconnected);
             });
-    connect(static_cast<LocalSocketController *>(m_impl.get()), &LocalSocketController::backendError, this, [this] {
-        setLastError(ErrorCode::AmneziaServiceConnectionFailed);
+    connect(static_cast<LocalSocketController *>(m_impl.get()), &LocalSocketController::backendError, this, [this](int code) {
+        switch (static_cast<DaemonError>(code)) {
+        case DaemonError::ERROR_SPLIT_TUNNEL_INIT_FAILURE: setLastError(ErrorCode::AppSplitTunnelInitializationFailed); break;
+        case DaemonError::ERROR_SPLIT_TUNNEL_START_FAILURE: setLastError(ErrorCode::AppSplitTunnelStartFailed); break;
+        case DaemonError::ERROR_SPLIT_TUNNEL_EXCLUDE_FAILURE: setLastError(ErrorCode::AppSplitTunnelRulesFailed); break;
+        default: setLastError(ErrorCode::AmneziaServiceConnectionFailed); break;
+        }
     });
     m_impl->initialize(nullptr, nullptr);
 }

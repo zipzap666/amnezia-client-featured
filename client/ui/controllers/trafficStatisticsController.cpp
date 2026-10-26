@@ -42,9 +42,11 @@ void TrafficStatisticsController::reset()
     ++m_resetGeneration;
     m_vpn = {};
     m_physical = {};
+    m_proxy = {}; m_proxyDirect = {};
     m_adapters.clear();
     emit changed();
 }
+
 
 TrafficStatisticsController::Snapshot TrafficStatisticsController::readPhysical()
 {

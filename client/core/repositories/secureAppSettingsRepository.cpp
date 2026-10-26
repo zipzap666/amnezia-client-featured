@@ -18,6 +18,24 @@
 
 using namespace amnezia;
 
+QJsonObject SecureAppSettingsRepository::proxySettings() const
+{
+    auto object = QJsonDocument::fromJson(value("Proxy/settings").toByteArray()).object();
+    if (!object.contains("systemProxy")) object["systemProxy"] = true;
+    if (!object.contains("httpPort")) object["httpPort"] = 8080;
+    if (!object.contains("socksPort")) object["socksPort"] = 1080;
+    return object;
+}
+void SecureAppSettingsRepository::setProxySettings(const QJsonObject &settings)
+{
+    const int http = settings["httpPort"].toInt(), socks = settings["socksPort"].toInt();
+    if (http < 1 || http > 65535 || socks < 1 || socks > 65535 || http == socks) return;
+    setValue("Proxy/settings", QJsonDocument(settings).toJson(QJsonDocument::Compact));
+    emit proxySettingsChanged();
+}
+bool SecureAppSettingsRepository::proxyMode() const { return value("Proxy/mode", false).toBool(); }
+void SecureAppSettingsRepository::setProxyMode(bool enabled) { setValue("Proxy/mode", enabled); }
+
 namespace {
     constexpr char gatewayEndpoint[] = "http://gw.amnezia.org:80/";
 }

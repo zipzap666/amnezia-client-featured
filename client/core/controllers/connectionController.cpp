@@ -19,6 +19,58 @@
 using namespace amnezia;
 using namespace ProtocolUtils;
 
+QJsonObject ConnectionController::effectiveSplitSnapshot() const
+{
+    auto value = m_appSettingsRepository->splitTunnelSnapshot();
+    return proxyMode() ? SplitTunnelSettings::forProxy(value) : value;
+}
+bool ConnectionController::hasPendingSplitTunnelChanges() const
+{
+    // Preparation has not captured a new attempt yet; it will include all saved edits.
+    if (m_state == Vpn::Preparing) return false;
+    // A fresh connection already includes edits saved while disconnected.
+    // Compare edits made during startup with that attempt, not the previous session.
+    const bool starting = m_opening || m_state == Vpn::Connecting || m_state == Vpn::Reconnecting;
+    return (starting ? m_splitSession.pendingForAttempt() : m_splitSession.pending()) || (proxyMode() && m_state == Vpn::Connected
+                                        && proxySettings() != m_proxySettingsBaseline);
+}
+bool ConnectionController::proxyAvailable() const
+{
+#ifdef Q_OS_WIN
+    DockerContainer container;
+    return defaultContainerForServer(m_serversRepository->defaultServerId(), container) == ErrorCode::NoError
+           && ContainerUtils::isAwgContainer(container);
+#else
+    return false;
+#endif
+}
+bool ConnectionController::stopActiveBackend()
+{
+    if (proxyMode()) {
+        if (m_proxy->stop()) return true;
+        m_switchPending = false; m_splitSession.finishReconnect(); emit splitTunnelStatusChanged();
+        return false;
+    }
+    emit closeConnectionRequested();
+    return true;
+}
+void ConnectionController::selectProxyMode(bool enabled)
+{
+    if (enabled == proxyMode() || m_opening || m_switchPending || m_splitSession.reconnecting()
+        || m_state == Vpn::Connecting || m_state == Vpn::Reconnecting || m_state == Vpn::Disconnecting) return;
+#ifndef Q_OS_WIN
+    if (enabled) return;
+#endif
+    const auto next = enabled ? ConnectionMode::Proxy : ConnectionMode::Vpn;
+    if (m_state == Vpn::Connected) {
+        m_nextMode = next; m_switchPending = true; stopActiveBackend();
+    } else {
+        if ((m_proxy->recoveryPending() || m_proxy->running()) && !m_proxy->stop()) return;
+        m_mode = next; m_appSettingsRepository->setProxyMode(enabled);
+        m_splitSession = {}; refreshSplitTunnelSettings(); emit proxyChanged();
+    }
+}
+
 ConnectionController::ConnectionController(SecureServersRepository* serversRepository,
                                          SecureAppSettingsRepository* appSettingsRepository,
                                          VpnConnection* vpnConnection,
@@ -28,7 +80,24 @@ ConnectionController::ConnectionController(SecureServersRepository* serversRepos
       m_appSettingsRepository(appSettingsRepository),
       m_vpnConnection(vpnConnection)
 {
-    connect(m_vpnConnection, &VpnConnection::connectionStateChanged, this, &ConnectionController::handleConnectionState);
+    m_proxy = new ProxyConnection(this);
+#ifdef Q_OS_WIN
+    if (m_appSettingsRepository->proxyMode() || m_proxy->recoveryPending()) m_mode = ConnectionMode::Proxy;
+#endif
+    connect(m_vpnConnection, &VpnConnection::connectionStateChanged, this, [this](Vpn::ConnectionState state) {
+        if (!proxyMode()) handleConnectionState(state);
+    });
+    connect(m_proxy, &ProxyConnection::stateChanged, this, [this](Vpn::ConnectionState state) {
+        if (!proxyMode()) return;
+        if (state == Vpn::Connected) m_splitSession.connected(m_splitSession.attempt());
+        handleConnectionState(state);
+    });
+    connect(m_proxy, &ProxyConnection::changed, this, &ConnectionController::proxyChanged);
+    connect(m_proxy, &ProxyConnection::failed, this, &ConnectionController::proxyError);
+    connect(m_serversRepository, &SecureServersRepository::defaultServerChanged, this, &ConnectionController::proxyChanged);
+    connect(m_appSettingsRepository, &SecureAppSettingsRepository::proxySettingsChanged, this, [this] {
+        refreshSplitTunnelSettings(); emit proxyChanged();
+    });
     refreshSplitTunnelSettings();
     connect(m_appSettingsRepository, &SecureAppSettingsRepository::sitesChanged, this, &ConnectionController::refreshSplitTunnelSettings);
     connect(m_appSettingsRepository, &SecureAppSettingsRepository::appsChanged, this, &ConnectionController::refreshSplitTunnelSettings);
@@ -50,7 +119,7 @@ ConnectionController::ConnectionController(SecureServersRepository* serversRepos
 
 bool ConnectionController::isConnected() const
 {
-    return m_vpnConnection && m_vpnConnection->connectionState() == Vpn::ConnectionState::Connected;
+    return m_state == Vpn::Connected;
 }
 
 void ConnectionController::setConnectionState(Vpn::ConnectionState state)
@@ -111,7 +180,7 @@ ErrorCode ConnectionController::isConnectionSupported(const QString &serverId) c
         return ErrorCode::InternalError;
     }
 
-    if (!isServiceReady()) {
+    if (!proxyMode() && !isServiceReady()) {
         return ErrorCode::AmneziaServiceNotRunning;
     }
 
@@ -140,6 +209,8 @@ ErrorCode ConnectionController::isConnectionSupported(const QString &serverId) c
     if (!isContainerSupported(container)) {
         return ErrorCode::NotSupportedOnThisPlatform;
     }
+
+    if (proxyMode() && !ContainerUtils::isAwgContainer(container)) return ErrorCode::NotSupportedOnThisPlatform;
 
     return ErrorCode::NoError;
 }
@@ -231,7 +302,7 @@ ErrorCode ConnectionController::openConnectionImpl(const QString &serverId, Dock
 {
     const auto request = ++m_requestGeneration;
     m_opening = true;
-    const auto snapshot = m_appSettingsRepository->splitTunnelSnapshot();
+    const auto snapshot = effectiveSplitSnapshot();
     QJsonObject vpnConfiguration;
     DockerContainer container;
     ErrorCode errorCode = prepareConnection(serverId, vpnConfiguration, container, snapshot, forcedContainer);
@@ -253,18 +324,23 @@ ErrorCode ConnectionController::openConnectionImpl(const QString &serverId, Dock
         m_opening = false;
         return ErrorCode::NoError;
     }
+    if (proxyMode()) {
+        if (!ContainerUtils::isAwgContainer(container)) { m_opening = false; return ErrorCode::NotSupportedOnThisPlatform; }
+        m_proxySettingsBaseline = proxySettings();
+        m_proxy->start(vpnConfiguration, m_proxySettingsBaseline);
+        return ErrorCode::NoError;
+    }
     emit openConnectionRequested(serverId, container, vpnConfiguration);
     return ErrorCode::NoError;
 }
 
 void ConnectionController::closeConnection()
 {
+    m_switchPending = false;
     ++m_requestGeneration;
     m_splitSession.finishReconnect();
     emit splitTunnelStatusChanged();
-    if (m_vpnConnection) {
-        emit closeConnectionRequested();
-    }
+    stopActiveBackend();
 }
 
 #ifdef Q_OS_ANDROID
@@ -278,14 +354,14 @@ void ConnectionController::restoreConnection()
 
 void ConnectionController::onKillSwitchModeChanged(bool enabled)
 {
-    if (m_vpnConnection) {
+    if (m_vpnConnection && !proxyMode()) {
         emit killSwitchModeChangedRequested(enabled);
     }
 }
 
 ErrorCode ConnectionController::lastConnectionError() const
 {
-    return m_vpnConnection->lastError();
+    return proxyMode() ? ErrorCode::InternalError : m_vpnConnection->lastError();
 }
 
 QJsonObject ConnectionController::createConnectionConfiguration(const QPair<QString, QString> &dns,
@@ -358,7 +434,7 @@ bool ConnectionController::isContainerSupported(DockerContainer container) const
 
 void ConnectionController::refreshSplitTunnelSettings()
 {
-    m_splitSession.save(m_appSettingsRepository->splitTunnelSnapshot());
+    m_splitSession.save(effectiveSplitSnapshot());
     emit splitTunnelStatusChanged();
 }
 
@@ -366,7 +442,7 @@ void ConnectionController::reconnectWithSavedRules()
 {
     if (!m_splitSession.requestReconnect(m_state == Vpn::Connected && !m_opening)) return;
     emit splitTunnelStatusChanged();
-    emit closeConnectionRequested();
+    stopActiveBackend();
 }
 
 void ConnectionController::handleConnectionState(Vpn::ConnectionState state)
@@ -374,6 +450,20 @@ void ConnectionController::handleConnectionState(Vpn::ConnectionState state)
     const bool silent = m_splitSession.reconnecting();
     const bool wasOpening = m_opening;
     m_state = state;
+    if (state == Vpn::Error || state == Vpn::Unknown) m_switchPending = false;
+    if (state == Vpn::Disconnected && m_switchPending) {
+        m_switchPending = false;
+        m_mode = m_nextMode;
+        m_appSettingsRepository->setProxyMode(proxyMode());
+        m_splitSession = {};
+        refreshSplitTunnelSettings();
+        emit proxyChanged();
+        QMetaObject::invokeMethod(this, [this] {
+            if (m_state != Vpn::Disconnected) return;
+            const auto error = openConnectionImpl(m_sessionServerId, m_sessionContainer);
+            if (error != ErrorCode::NoError) emit reconnectErrorOccurred(error);
+        }, Qt::QueuedConnection);
+    }
     if (state == Vpn::Connected || state == Vpn::Disconnected || state == Vpn::Error || state == Vpn::Unknown)
         m_opening = false;
     if (state == Vpn::Disconnected && m_splitSession.disconnected()) {

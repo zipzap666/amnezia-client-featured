@@ -36,6 +36,8 @@ int main(int argc, char **argv) {
     QString mockSource = R"(
 import QtQuick
 QtObject {
+    property bool proxyMode: false
+    property var proxyCounters: ({})
     property int safeAreaTopMargin: 0
     property int safeAreaBottomMargin: 0
     property int imeHeight: 0

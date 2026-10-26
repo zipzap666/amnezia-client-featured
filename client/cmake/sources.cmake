@@ -309,3 +309,10 @@ if(APPLE AND MACOS_NE)
         ${CLIENT_ROOT_DIR}/ui/utils/systemTrayNotificationHandler.cpp
     )
 endif()
+list(APPEND SOURCES
+    ${CLIENT_ROOT_DIR}/core/proxy/proxyConnection.cpp
+    ${CLIENT_ROOT_DIR}/core/proxy/proxyTrafficStatistics.cpp
+    ${CLIENT_ROOT_DIR}/core/proxy/proxyConnection.h
+    ${CLIENT_ROOT_DIR}/core/proxy/windowsSystemProxyManager.cpp
+    ${CLIENT_ROOT_DIR}/core/proxy/windowsSystemProxyManager.h
+)

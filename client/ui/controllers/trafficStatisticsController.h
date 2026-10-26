@@ -7,15 +7,21 @@
 #include "trafficSeries.h"
 
 class VpnConnection;
+class ProxyConnection;
 class TrafficStatisticsController : public QObject {
     Q_OBJECT
     Q_PROPERTY(QVariantMap vpn READ vpn NOTIFY changed)
     Q_PROPERTY(QVariantMap physical READ physical NOTIFY changed)
+    Q_PROPERTY(QVariantMap proxy READ proxy NOTIFY changed)
+    Q_PROPERTY(QVariantMap proxyDirect READ proxyDirect NOTIFY changed)
     Q_PROPERTY(qint64 now READ now NOTIFY changed)
 public:
     explicit TrafficStatisticsController(VpnConnection *connection, QObject *parent = nullptr);
     QVariantMap vpn() const { return m_vpn.data(now()); }
     QVariantMap physical() const { return m_physical.data(now()); }
+    QVariantMap proxy() const { return m_proxy.data(now()); }
+    QVariantMap proxyDirect() const { return m_proxyDirect.data(now()); }
+    void attachProxy(ProxyConnection *connection);
     qint64 now() const { return m_clock.elapsed(); }
     Q_INVOKABLE void reset();
 signals:
@@ -30,7 +36,8 @@ private:
     };
     static Snapshot readPhysical();
     void poll();
-    TrafficSeries m_vpn, m_physical;
+    TrafficSeries m_vpn, m_physical, m_proxy, m_proxyDirect;
+    quint64 m_proxyGeneration = 0;
     QElapsedTimer m_clock;
     QTimer m_timer;
     QFutureWatcher<Snapshot> m_watcher;

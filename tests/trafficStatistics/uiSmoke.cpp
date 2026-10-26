@@ -44,6 +44,8 @@ int main(int argc, char **argv) {
     mocks.setData(R"(
 import QtQuick
 QtObject {
+    property bool proxyMode: false
+    property var proxyCounters: ({})
     property int safeAreaTopMargin: 0
     property string connectionStateText: "Подключено"
     property bool isConnected: true

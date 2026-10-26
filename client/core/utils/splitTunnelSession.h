@@ -9,6 +9,11 @@
 
 namespace SplitTunnelSettings {
 inline constexpr auto configKey = "_splitTunnelSettings";
+inline QJsonObject forProxy(QJsonObject snapshot)
+{
+    snapshot.remove("apps"); snapshot.remove("appsEnabled"); snapshot.remove("appMode");
+    return snapshot;
+}
 inline QJsonObject sites(const QJsonObject &snapshot, int mode)
 {
     return snapshot.value("sites").toObject().value(QString::number(mode)).toObject();
@@ -78,6 +83,9 @@ public:
     const QJsonObject &attempt() const { return m_attempt; }
     bool pending() const {
         return m_baseline && SplitTunnelSettings::canonical(m_saved) != SplitTunnelSettings::canonical(*m_baseline);
+    }
+    bool pendingForAttempt() const {
+        return SplitTunnelSettings::canonical(m_saved) != SplitTunnelSettings::canonical(m_attempt);
     }
     bool requestReconnect(bool connected) {
         if (!connected || m_reconnect != Idle) return false;

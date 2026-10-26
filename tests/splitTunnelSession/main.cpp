@@ -45,6 +45,24 @@ int main(int argc, char **argv) {
     auto attempt = session.attempt();
     auto edited = original;
     edited["siteMode"] = 1;
+    {
+        SplitTunnelSession offlineEdits;
+        offlineEdits.save(original);
+        offlineEdits.begin(original);
+        offlineEdits.connected(original);
+        // Disconnect, edit saved rules, then start a new connection.
+        offlineEdits.save(edited);
+        offlineEdits.begin(edited);
+        check(!offlineEdits.pendingForAttempt(), "offline edits are already part of a new connection");
+        auto duringStartup = edited;
+        duringStartup["appsEnabled"] = false;
+        offlineEdits.save(duringStartup);
+        check(offlineEdits.pendingForAttempt(), "new edits during startup still require reconnect");
+        offlineEdits.connected(edited);
+        check(offlineEdits.pending(), "startup edits remain pending after success");
+        offlineEdits.save(edited);
+        check(!offlineEdits.pending(), "fresh connection applies offline edits");
+    }
     session.save(edited);
     check(session.pending(), "edits during connection retained");
     check(session.attempt() == attempt, "saved edits cannot mutate attempt");

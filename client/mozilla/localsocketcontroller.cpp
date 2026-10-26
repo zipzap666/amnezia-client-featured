@@ -514,7 +514,7 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
     m_deactivationPending = false;
     m_waitingForStoppedStatus = false;
     m_activationFailed = true;
-    emit backendError();
+    emit backendError(obj.value("errorCode").toInt(-1));
     if (!obj.contains("errorCode")) {
       // report a generic error if we dont know what it is.
       logger.error() << "generic backend failure error";
@@ -548,6 +548,7 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
         Q_ASSERT(false);
         break;
     }
+    return;
   }
 
   if (type == "logs") {

@@ -92,6 +92,7 @@ namespace PageLoader
 
         PageUpdate,
         PageStatistics,
+        PageSettingsSystemProxy,
     };
     Q_ENUM_NS(PageEnum)
 

@@ -188,6 +188,10 @@
         <source>Preparing...</source>
         <translation>Подготовка...</translation>
     </message>
+    <message>
+        <source>Proxy connected</source>
+        <translation>Прокси подключён</translation>
+    </message>
 </context>
 <context>
     <name>ContextMenuType</name>
@@ -266,6 +270,10 @@ Can&apos;t be disabled for current server</source>
         <location filename="../ui/qml/Components/HomeSplitTunnelingDrawer.qml" line="83"/>
         <source>App-based split tunneling</source>
         <translation>Раздельное туннелирование приложений</translation>
+    </message>
+    <message>
+        <source>In proxy mode, only site rules apply. Application rules are saved for VPN mode.</source>
+        <translation>В режиме прокси действуют только правила сайтов. Правила приложений сохраняются для режима VPN.</translation>
     </message>
 </context>
 <context>
@@ -538,6 +546,38 @@ Already installed containers were found on the server. All installed containers 
         <location filename="../ui/qml/Pages2/PageHome.qml" line="571"/>
         <source>Servers</source>
         <translation>Серверы</translation>
+    </message>
+    <message>
+        <source>VPN</source>
+        <translation>VPN</translation>
+    </message>
+    <message>
+        <source>Proxy</source>
+        <translation>Прокси</translation>
+    </message>
+    <message>
+        <source>Change connection mode?</source>
+        <translation>Сменить режим подключения?</translation>
+    </message>
+    <message>
+        <source>The current connection will be stopped and reconnected in the selected mode.</source>
+        <translation>Текущее подключение будет остановлено и запущено в выбранном режиме.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>System proxy settings</source>
+        <translation>Настройки системного прокси</translation>
+    </message>
+    <message>
+        <source>System proxy is retained. Reconnect or open settings to disconnect and restore Windows.</source>
+        <translation>Системный прокси сохранён. Переподключитесь или откройте настройки, чтобы отключить его и восстановить Windows.</translation>
+    </message>
+    <message>
+        <source>Reconnect to apply</source>
+        <translation>Переподключить для применения</translation>
     </message>
 </context>
 <context>
@@ -3375,6 +3415,10 @@ Create one from the current settings.</source>
         <location filename="../ui/qml/Pages2/PageSettings.qml" line="188"/>
         <source>Dev console</source>
         <translation>Консоль разработчика</translation>
+    </message>
+    <message>
+        <source>System proxy</source>
+        <translation>Системный прокси</translation>
     </message>
 </context>
 <context>
@@ -6832,6 +6876,70 @@ FileZilla или другие SFTP-клиенты, а также смонтир�
         <source>Can&apos;t find the colon separator between hostname and port</source>
         <translation>Невозможно найти разделитель-двоеточие между именем хоста и портом</translation>
     </message>
+    <message>
+        <source>Restore the previous system proxy session first.</source>
+        <translation>Сначала восстановите настройки предыдущей сессии системного прокси.</translation>
+    </message>
+    <message>
+        <source>Cannot read Windows proxy settings.</source>
+        <translation>Не удалось прочитать настройки прокси Windows.</translation>
+    </message>
+    <message>
+        <source>Cannot save system proxy recovery data.</source>
+        <translation>Не удалось сохранить данные восстановления системного прокси.</translation>
+    </message>
+    <message>
+        <source>Cannot apply Windows proxy settings. Recovery may be required.</source>
+        <translation>Не удалось применить настройки прокси Windows. Может потребоваться восстановление.</translation>
+    </message>
+    <message>
+        <source>Cannot commit system proxy recovery data.</source>
+        <translation>Не удалось зафиксировать данные восстановления системного прокси.</translation>
+    </message>
+    <message>
+        <source>Invalid system proxy recovery data.</source>
+        <translation>Данные восстановления системного прокси повреждены.</translation>
+    </message>
+    <message>
+        <source>Cannot restore Windows proxy settings. Try again.</source>
+        <translation>Не удалось восстановить настройки прокси Windows. Повторите попытку.</translation>
+    </message>
+    <message>
+        <source>Cannot remove system proxy recovery data.</source>
+        <translation>Не удалось удалить данные восстановления системного прокси.</translation>
+    </message>
+    <message>
+        <source>System proxy is not managed by AmneziaVPN</source>
+        <translation>AmneziaVPN не управляет системным прокси</translation>
+    </message>
+    <message>
+        <source>Cannot read Windows proxy settings</source>
+        <translation>Не удалось прочитать настройки прокси Windows</translation>
+    </message>
+    <message>
+        <source>System proxy recovery data is invalid</source>
+        <translation>Данные восстановления системного прокси повреждены</translation>
+    </message>
+    <message>
+        <source>System proxy is enabled; disconnect to restore previous settings</source>
+        <translation>Системный прокси включён; отключитесь для восстановления прежних настроек</translation>
+    </message>
+    <message>
+        <source>Windows proxy settings were changed externally; they will not be overwritten</source>
+        <translation>Настройки прокси Windows изменены извне; они не будут перезаписаны</translation>
+    </message>
+    <message>
+        <source>The application split tunneling driver could not be initialized. Another VPN may be using it. Disable application split tunneling or resolve the driver conflict. Saved rules will be kept.</source>
+        <translation>Не удалось инициализировать драйвер раздельного туннелирования по приложениям. Возможно, его использует другой VPN. Отключите раздельное туннелирование по приложениям или устраните конфликт драйверов. Сохранённые правила останутся.</translation>
+    </message>
+    <message>
+        <source>Application split tunneling could not be started. Check its driver and conflicts with other VPN applications.</source>
+        <translation>Не удалось запустить раздельное туннелирование по приложениям. Проверьте драйвер и конфликты с другими VPN-приложениями.</translation>
+    </message>
+    <message>
+        <source>Application split tunneling rules could not be applied. Check the selected application paths and the driver state.</source>
+        <translation>Не удалось применить правила раздельного туннелирования по приложениям. Проверьте пути приложений и состояние драйвера.</translation>
+    </message>
 </context>
 <context>
     <name>RenameServerDrawer</name>
@@ -7239,6 +7347,14 @@ Remove the server from the app to continue.</source>
     <message><source>Reconnect</source><translation>Переподключить</translation></message>
     <message><source>Reconnecting. The connection will be temporarily interrupted.</source><translation>Переподключение. Соединение временно прервётся.</translation></message>
     <message><source>The VPN connection will be temporarily interrupted.</source><translation>Соединение VPN временно прервётся.</translation></message>
+    <message>
+        <source>Settings saved. Reconnect proxy to apply them.</source>
+        <translation>Настройки сохранены. Переподключите прокси для их применения.</translation>
+    </message>
+    <message>
+        <source>The proxy connection will be temporarily interrupted.</source>
+        <translation>Подключение прокси будет временно прервано.</translation>
+    </message>
 </context>
 <context>
     <name>SplitTunnelGroupsUiController</name>
@@ -7368,6 +7484,26 @@ Remove the server from the app to continue.</source>
         <source>How traffic is measured</source>
         <translation>Как считаем трафик</translation>
     </message>
+    <message>
+        <source>Proxy state: </source>
+        <translation>Состояние прокси: </translation>
+    </message>
+    <message>
+        <source>AWG peer counters (transport): received %1, sent %2</source>
+        <translation>Счётчики peer AWG (транспорт): получено %1, отправлено %2</translation>
+    </message>
+    <message>
+        <source>Proxy through AWG</source>
+        <translation>Прокси через AWG</translation>
+    </message>
+    <message>
+        <source>Proxy direct traffic</source>
+        <translation>Прямой трафик прокси</translation>
+    </message>
+    <message>
+        <source>Proxy counters measure application streams through AWG and directly, including HTTP headers. Physical counters include all computer traffic and transport overhead. These graphs must not be added together.</source>
+        <translation>Счётчики прокси измеряют потоки приложений через AWG и напрямую, включая заголовки HTTP. Физические адаптеры учитывают весь трафик компьютера и накладные расходы транспорта. Складывать эти графики нельзя.</translation>
+    </message>
 </context>
 <context>
     <name>TrafficChart</name>
@@ -7378,6 +7514,127 @@ Remove the server from the app to continue.</source>
     <message>
         <source>Now</source>
         <translation>Сейчас</translation>
+    </message>
+</context>
+<context>
+    <name>ProxyConnection</name>
+    <message>
+        <source>AWG proxy connection timed out.</source>
+        <translation>Истекло время подключения прокси AWG.</translation>
+    </message>
+    <message>
+        <source>Cannot start the AWG proxy helper.</source>
+        <translation>Не удалось запустить процесс прокси AWG.</translation>
+    </message>
+    <message>
+        <source>AWG proxy stopped unexpectedly. System proxy settings are retained.</source>
+        <translation>Процесс прокси AWG неожиданно завершился. Настройки системного прокси сохранены.</translation>
+    </message>
+    <message>
+        <source>Cannot supervise the AWG proxy helper.</source>
+        <translation>Не удалось настроить контроль процесса прокси AWG.</translation>
+    </message>
+    <message>
+        <source>The previous proxy helper is still running.</source>
+        <translation>Предыдущий процесс прокси ещё работает.</translation>
+    </message>
+    <message>
+        <source>The AWG profile has no native client configuration.</source>
+        <translation>В профиле AWG отсутствует клиентская конфигурация.</translation>
+    </message>
+    <message>
+        <source>The AWG profile has no peer.</source>
+        <translation>В профиле AWG отсутствует peer.</translation>
+    </message>
+    <message>
+        <source>Invalid proxy helper response.</source>
+        <translation>Некорректный ответ процесса прокси.</translation>
+    </message>
+    <message>
+        <source>Incompatible proxy helper.</source>
+        <translation>Несовместимая версия процесса прокси.</translation>
+    </message>
+    <message>
+        <source>AWG proxy: %1</source>
+        <translation>Прокси AWG: %1</translation>
+    </message>
+    <message>
+        <source>Cannot stop the previous proxy helper.</source>
+        <translation>Не удалось остановить предыдущий процесс прокси.</translation>
+    </message>
+    <message>
+        <source>Cannot restart the AWG proxy helper.</source>
+        <translation>Не удалось перезапустить процесс прокси AWG.</translation>
+    </message>
+    <message>
+        <source>System proxy is enabled; AWG is unavailable or reconnecting.</source>
+        <translation>Системный прокси включён; AWG недоступен или переподключается.</translation>
+    </message>
+    <message>
+        <source>Windows proxy settings changed externally. Disconnect before applying them again.</source>
+        <translation>Настройки прокси Windows изменены извне. Отключитесь перед их повторным применением.</translation>
+    </message>
+</context>
+<context>
+    <name>proxyTrafficStatistics</name>
+</context>
+<context>
+    <name>PageSettingsSystemProxy</name>
+    <message>
+        <source>Enter different ports between 1 and 65535</source>
+        <translation>Укажите разные порты от 1 до 65535</translation>
+    </message>
+    <message>
+        <source>System proxy</source>
+        <translation>Системный прокси</translation>
+    </message>
+    <message>
+        <source>Configure Windows system proxy</source>
+        <translation>Настраивать системный прокси Windows</translation>
+    </message>
+    <message>
+        <source>When disabled, configure applications manually using the addresses below</source>
+        <translation>Если выключено, настройте приложения вручную по адресам ниже</translation>
+    </message>
+    <message>
+        <source>HTTP / HTTPS port</source>
+        <translation>Порт HTTP / HTTPS</translation>
+    </message>
+    <message>
+        <source>SOCKS5 port</source>
+        <translation>Порт SOCKS5</translation>
+    </message>
+    <message>
+        <source>Copied</source>
+        <translation>Скопировано</translation>
+    </message>
+    <message>
+        <source>Only applications using the Windows proxy settings are routed through the proxy. UDP and WebRTC may bypass it. Site rules apply inside the proxy; application rules apply only in VPN mode.</source>
+        <translation>Прокси используют приложения, учитывающие настройки Windows. UDP и WebRTC могут обходить его. Внутри прокси действуют правила сайтов; правила приложений — только в режиме VPN.</translation>
+    </message>
+    <message>
+        <source>Reconnect to apply</source>
+        <translation>Переподключить для применения</translation>
+    </message>
+    <message>
+        <source>Disconnect and restore Windows settings</source>
+        <translation>Отключить и восстановить настройки Windows</translation>
+    </message>
+    <message>
+        <source>Reset proxy settings</source>
+        <translation>Сбросить параметры прокси</translation>
+    </message>
+    <message>
+        <source>Reset proxy settings?</source>
+        <translation>Сбросить параметры прокси?</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation>Сбросить</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
     </message>
 </context>
 </TS>

@@ -170,6 +170,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 if(WIN32)
+    find_package(awg-proxy CONFIG REQUIRED)
+    set(AWG_PROXY_EXECUTABLE "${awg-proxy_PACKAGE_FOLDER_RELEASE}/bin/amnezia-awg-proxy.exe")
+    if(NOT EXISTS "${AWG_PROXY_EXECUTABLE}")
+        message(FATAL_ERROR "The AWG proxy package has no Windows helper")
+    endif()
+    add_custom_command(TARGET ${PROJECT} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${AWG_PROXY_EXECUTABLE}" "$<TARGET_FILE_DIR:${PROJECT}>")
+    install(PROGRAMS "${AWG_PROXY_EXECUTABLE}" DESTINATION . COMPONENT AmneziaVPN)
+    install(DIRECTORY "${awg-proxy_PACKAGE_FOLDER_RELEASE}/licenses/" DESTINATION licenses/awg-proxy COMPONENT AmneziaVPN)
     configure_file(
         ${CMAKE_CURRENT_LIST_DIR}/platforms/windows/amneziavpn.rc.in
         ${CMAKE_CURRENT_BINARY_DIR}/amneziavpn.rc
@@ -181,6 +190,7 @@ if(WIN32)
         shlwapi
         iphlpapi
         ws2_32
+        wininet
         gdi32
     )
 

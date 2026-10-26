@@ -41,7 +41,7 @@ class LocalSocketController final : public ControllerImpl {
   bool multihopSupported() override { return true; }
 
  signals:
-  void backendError();
+  void backendError(int daemonErrorCode = -1);
 
  private:
   void initializeInternal();

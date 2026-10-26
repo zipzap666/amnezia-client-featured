@@ -23,6 +23,7 @@ ConnectionUiController::ConnectionUiController(ConnectionController* connectionC
     connect(this, &ConnectionUiController::connectButtonClicked, this, &ConnectionUiController::toggleConnection, Qt::QueuedConnection);
 
     connect(m_connectionController, &ConnectionController::splitTunnelStatusChanged, this, &ConnectionUiController::splitTunnelStatusChanged);
+    connect(m_connectionController, &ConnectionController::proxyChanged, this, &ConnectionUiController::proxyChanged);
     connect(m_connectionController, &ConnectionController::reconnectErrorOccurred, this, &ConnectionUiController::connectionErrorOccurred);
     m_state = Vpn::ConnectionState::Disconnected;
 }
@@ -65,7 +66,7 @@ void ConnectionUiController::onConnectionStateChanged(Vpn::ConnectionState state
 
         m_isConnectionInProgress = false;
         m_isConnected = true;
-        m_connectionStateText = tr("Connected");
+        m_connectionStateText = proxyMode() ? tr("Proxy connected") : tr("Connected");
         break;
     }
     case Vpn::ConnectionState::Connecting: {
@@ -95,7 +96,7 @@ void ConnectionUiController::onConnectionStateChanged(Vpn::ConnectionState state
     case Vpn::ConnectionState::Error: {
         m_isConnectionInProgress = false;
         m_connectionStateText = tr("Connect");
-        emit connectionErrorOccurred(getLastConnectionError());
+        if (!proxyMode()) emit connectionErrorOccurred(getLastConnectionError());
         break;
     }
     case Vpn::ConnectionState::Unknown: {

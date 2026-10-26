@@ -60,6 +60,9 @@ QString errorString(ErrorCode code) {
     // Distro errors
     case (ErrorCode::OpenVpnExecutableMissing): errorMessage = QObject::tr("OpenVPN executable missing"); break;
     case (ErrorCode::AmneziaServiceConnectionFailed): errorMessage = QObject::tr("Amnezia helper service error"); break;
+    case ErrorCode::AppSplitTunnelInitializationFailed: errorMessage = QObject::tr("The application split tunneling driver could not be initialized. Another VPN may be using it. Disable application split tunneling or resolve the driver conflict. Saved rules will be kept."); break;
+    case ErrorCode::AppSplitTunnelStartFailed: errorMessage = QObject::tr("Application split tunneling could not be started. Check its driver and conflicts with other VPN applications."); break;
+    case ErrorCode::AppSplitTunnelRulesFailed: errorMessage = QObject::tr("Application split tunneling rules could not be applied. Check the selected application paths and the driver state."); break;
     case (ErrorCode::OpenSslFailed): errorMessage = QObject::tr("OpenSSL failed"); break;
 
     // VPN errors

@@ -17,6 +17,7 @@
 #include "core/protocols/vpnProtocol.h"
 #include "vpnConnection.h"
 #include "core/utils/splitTunnelSession.h"
+#include "core/proxy/proxyConnection.h"
 
 using namespace amnezia;
 
@@ -25,6 +26,16 @@ class ConnectionController : public QObject
     Q_OBJECT
 
 public:
+    enum class ConnectionMode { Vpn, Proxy };
+    Q_ENUM(ConnectionMode)
+    bool proxyMode() const { return m_mode == ConnectionMode::Proxy; }
+    bool proxyAvailable() const;
+    QJsonObject proxySettings() const { return m_appSettingsRepository->proxySettings(); }
+    void saveProxySettings(const QJsonObject &settings) { m_appSettingsRepository->setProxySettings(settings); }
+    void selectProxyMode(bool enabled);
+    QString proxyStatus() const { return m_proxy->status(); }
+    bool proxyRecoveryPending() const { return m_proxy->recoveryPending(); }
+    ProxyConnection *proxyConnection() const { return m_proxy; }
     explicit ConnectionController(SecureServersRepository* serversRepository,
                                  SecureAppSettingsRepository* appSettingsRepository,
                                  VpnConnection* vpnConnection,
@@ -43,7 +54,7 @@ public:
 
     void closeConnection();
     void reconnectWithSavedRules();
-    bool hasPendingSplitTunnelChanges() const { return m_splitSession.pending(); }
+    bool hasPendingSplitTunnelChanges() const;
     bool isSplitTunnelReconnectInProgress() const { return m_splitSession.reconnecting(); }
 
 #ifdef Q_OS_ANDROID
@@ -71,6 +82,8 @@ public:
     bool isContainerSupported(DockerContainer container) const;
 
 signals:
+    void proxyChanged();
+    void proxyError(const QString &message);
     void splitTunnelStatusChanged();
     void reconnectErrorOccurred(ErrorCode error);
     void connectionStateChanged(Vpn::ConnectionState state);
@@ -84,6 +97,13 @@ signals:
 #endif
 
 private:
+    QJsonObject effectiveSplitSnapshot() const;
+    bool stopActiveBackend();
+    ConnectionMode m_mode = ConnectionMode::Vpn;
+    ProxyConnection *m_proxy = nullptr;
+    QJsonObject m_proxySettingsBaseline;
+    bool m_switchPending = false;
+    ConnectionMode m_nextMode = ConnectionMode::Vpn;
     void refreshSplitTunnelSettings();
     void handleConnectionState(Vpn::ConnectionState state);
     ErrorCode openConnectionImpl(const QString &serverId, DockerContainer forcedContainer);

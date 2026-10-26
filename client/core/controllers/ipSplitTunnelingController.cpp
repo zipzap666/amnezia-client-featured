@@ -87,6 +87,7 @@ bool IpSplitTunnelingController::addSite(const QString &hostname)
     }
     
     if (addSiteInternal(normalizedHostname, {})) {
+        if (m_appSettingsRepository->proxyMode()) return true;
         const auto mode = m_currentRouteMode;
         QHostInfo::lookupHost(normalizedHostname, this, [this, mode, normalizedHostname](const QHostInfo &info) {
             if (!m_appSettingsRepository->vpnSites(mode).contains(normalizedHostname)) return;

@@ -14,7 +14,8 @@ public:
         int disconnected = 0, errors = 0, connected = 0;
         QObject::connect(&controller, &ControllerImpl::connected, [&] { ++connected; });
         QObject::connect(&controller, &ControllerImpl::disconnected, [&] { ++disconnected; });
-        QObject::connect(&controller, &LocalSocketController::backendError, [&] { ++errors; });
+        int daemonError = -1;
+        QObject::connect(&controller, &LocalSocketController::backendError, [&](int code) { ++errors; daemonError = code; });
         controller.m_daemonState = LocalSocketController::eReady;
         controller.m_activationRequested = true;
         controller.deactivate();
@@ -32,6 +33,12 @@ public:
         check(errors == 1 && disconnected == 1, "still connected is failure, never a restart acknowledgement");
         controller.parseCommand(R"({"type":"backendFailure","errorCode":1})");
         check(errors == 2, "backend errors propagated");
+        controller.parseCommand(R"({"type":"backendFailure","errorCode":2})");
+        check(errors == 3 && daemonError == 2, "split tunnel initialization failure is distinguishable from IPC failure");
+        controller.parseCommand(R"({"type":"backendFailure","errorCode":3})");
+        check(errors == 4 && daemonError == 3, "split tunnel start failure is preserved");
+        controller.parseCommand(R"({"type":"backendFailure","errorCode":4})");
+        check(errors == 5 && daemonError == 4, "split tunnel rules failure is preserved");
         controller.parseCommand(R"({"type":"connected","pubkey":"test"})");
         check(connected == 0, "late connected after failure cannot report success");
         LocalSocketController preparing;

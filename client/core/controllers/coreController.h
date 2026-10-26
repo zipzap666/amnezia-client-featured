@@ -96,6 +96,7 @@ public:
                             bool skipPlatformControllerInit = false);
 
     PageController* pageController() const;
+    bool isProxyMode() const { return m_connectionController && m_connectionController->proxyMode(); }
     void setQmlRoot();
     void checkForAppUpdates();
 

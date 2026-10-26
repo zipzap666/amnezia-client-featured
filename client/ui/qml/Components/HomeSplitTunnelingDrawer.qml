@@ -32,7 +32,7 @@ DrawerType2 {
             Layout.bottomMargin: 16
 
             headerText: qsTr("Split tunneling")
-            descriptionText:  qsTr("Allows you to connect to some sites or applications through a VPN connection and bypass others")
+            descriptionText: ConnectionController.proxyMode ? qsTr("In proxy mode, only site rules apply. Application rules are saved for VPN mode.") : qsTr("Allows you to connect to some sites or applications through a VPN connection and bypass others")
         }
 
         LabelWithButtonType {

@@ -178,7 +178,7 @@ Window  {
                 color: AmneziaStyle.color.paleGray
                 text: ConnectionController.isSplitTunnelReconnectInProgress
                       ? qsTr("Reconnecting. The connection will be temporarily interrupted.")
-                      : qsTr("Settings saved. Reconnect VPN to apply them.")
+                      : (ConnectionController.proxyMode ? qsTr("Settings saved. Reconnect proxy to apply them.") : qsTr("Settings saved. Reconnect VPN to apply them."))
             }
             BasicButtonType {
                 Layout.fillWidth: true
@@ -186,7 +186,7 @@ Window  {
                 enabled: ConnectionController.isConnected && !ConnectionController.isConnectionInProgress
                          && !ConnectionController.isSplitTunnelReconnectInProgress
                 clickedFunc: function() {
-                    PageController.showNotificationMessage(qsTr("The VPN connection will be temporarily interrupted."))
+                    PageController.showNotificationMessage(ConnectionController.proxyMode ? qsTr("The proxy connection will be temporarily interrupted.") : qsTr("The VPN connection will be temporarily interrupted."))
                     ConnectionController.reconnectWithSavedRules()
                 }
             }

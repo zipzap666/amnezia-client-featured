@@ -24,6 +24,10 @@ class SecureAppSettingsRepository : public QObject
     Q_OBJECT
 
 public:
+    QJsonObject proxySettings() const;
+    void setProxySettings(const QJsonObject &settings);
+    bool proxyMode() const;
+    void setProxyMode(bool enabled);
     QJsonObject splitTunnelSnapshot() const;
     QJsonObject splitTunnelGroups(bool apps, int mode) const;
     void setSplitTunnelGroups(bool apps, int mode, const QJsonObject &state);
@@ -106,6 +110,7 @@ public:
     void setXraySavedConfigs(const QByteArray &data);
 
 signals:
+    void proxySettingsChanged();
     void appLanguageChanged(QLocale locale);
     void allowedDnsServersChanged(const QStringList &servers);
     void sitesChanged(RouteMode mode);

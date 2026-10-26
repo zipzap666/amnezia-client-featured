@@ -62,6 +62,9 @@ namespace amnezia
         ExecutableMissing = 604,
         XrayExecutableMissing = 605,
         Tun2SockExecutableMissing = 606,
+        AppSplitTunnelInitializationFailed = 607,
+        AppSplitTunnelStartFailed = 608,
+        AppSplitTunnelRulesFailed = 609,
 
         // VPN errors
         OpenVpnAdaptersInUseError = 700,

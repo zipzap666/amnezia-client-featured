@@ -55,7 +55,7 @@ PageType {
             BaseHeaderType {
                 Layout.fillWidth: true
                 headerText: qsTr("Statistics")
-                descriptionText: qsTr("VPN state: ") + (ConnectionController.isConnected || ConnectionController.isConnectionInProgress
+                descriptionText: (ConnectionController.proxyMode ? qsTr("Proxy state: ") : qsTr("VPN state: ")) + (ConnectionController.isConnected || ConnectionController.isConnectionInProgress
                                  ? ConnectionController.connectionStateText : qsTr("Disconnected"))
             }
             RowLayout {
@@ -73,17 +73,26 @@ PageType {
                     clickedFunc: function() { root.period = 300 }
                 }
             }
+            ParagraphTextType {
+                Layout.fillWidth: true
+                visible: ConnectionController.proxyMode
+                text: qsTr("AWG peer counters (transport): received %1, sent %2")
+                    .arg(root.bytes(ConnectionController.proxyCounters.peerRx || 0))
+                    .arg(root.bytes(ConnectionController.proxyCounters.peerTx || 0))
+            }
             Repeater {
-                model: 2
+                model: ConnectionController.proxyMode ? 3 : 2
                 delegate: ColumnLayout {
                     id: card
                     required property int index
-                    readonly property var counters: index === 0 ? root.statistics.vpn : root.statistics.physical
+                    readonly property var counters: index === 0 ? (ConnectionController.proxyMode ? root.statistics.proxy : root.statistics.vpn)
+                                                               : (index === 2 ? root.statistics.proxyDirect : root.statistics.physical)
                     Layout.fillWidth: true
                     spacing: 8
                     BaseHeaderType {
                         Layout.fillWidth: true
-                        headerText: card.index === 0 ? qsTr("Through VPN") : qsTr("All adapter traffic")
+                        headerText: card.index === 0 ? (ConnectionController.proxyMode ? qsTr("Proxy through AWG") : qsTr("Through VPN"))
+                                                    : (card.index === 2 ? qsTr("Proxy direct traffic") : qsTr("All adapter traffic"))
                         headerTextMaximumLineCount: 4
                         headerTextElide: Text.ElideNone
                         descriptionText: card.index === 1 ? qsTr("Includes VPN and local network traffic") : ""
@@ -152,7 +161,7 @@ PageType {
                     Layout.fillWidth: true
                     font.pixelSize: 14
                     color: AmneziaStyle.color.mutedGray
-                    text: qsTr("VPN: OpenVPN management counters or WireGuard/AmneziaWG peer counters. Other protocols: unavailable. Physical: active hardware adapters only; virtual adapters excluded. These graphs measure different layers and must not be added together.")
+                    text: ConnectionController.proxyMode ? qsTr("Proxy counters measure application streams through AWG and directly, including HTTP headers. Physical counters include all computer traffic and transport overhead. These graphs must not be added together.") : qsTr("VPN: OpenVPN management counters or WireGuard/AmneziaWG peer counters. Other protocols: unavailable. Physical: active hardware adapters only; virtual adapters excluded. These graphs measure different layers and must not be added together.")
                 }
                 ParagraphTextType {
                     Layout.fillWidth: true

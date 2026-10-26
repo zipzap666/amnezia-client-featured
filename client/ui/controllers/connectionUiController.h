@@ -15,6 +15,23 @@ class ConnectionUiController : public QObject
     Q_OBJECT
 
 public:
+    Q_PROPERTY(bool proxyMode READ proxyMode NOTIFY proxyChanged)
+    Q_PROPERTY(bool proxyAvailable READ proxyAvailable NOTIFY proxyChanged)
+    Q_PROPERTY(QVariantMap proxySettings READ proxySettings NOTIFY proxyChanged)
+    Q_PROPERTY(QString proxyStatus READ proxyStatus NOTIFY proxyChanged)
+    Q_PROPERTY(bool proxyRecoveryPending READ proxyRecoveryPending NOTIFY proxyChanged)
+    Q_PROPERTY(QVariantMap proxyCounters READ proxyCounters NOTIFY proxyChanged)
+    bool proxyMode() const { return m_connectionController->proxyMode(); }
+    bool proxyAvailable() const { return m_connectionController->proxyAvailable(); }
+    QVariantMap proxySettings() const { return m_connectionController->proxySettings().toVariantMap(); }
+    QString proxyStatus() const { return m_connectionController->proxyStatus(); }
+    bool proxyRecoveryPending() const { return m_connectionController->proxyRecoveryPending(); }
+    QVariantMap proxyCounters() const { return m_connectionController->proxyConnection()->counters(); }
+    Q_INVOKABLE void selectProxyMode(bool enabled) { m_connectionController->selectProxyMode(enabled); }
+    Q_INVOKABLE bool saveProxySettings(bool systemProxy, int httpPort, int socksPort) {
+        if (httpPort < 1 || httpPort > 65535 || socksPort < 1 || socksPort > 65535 || httpPort == socksPort) return false;
+        m_connectionController->saveProxySettings({{"systemProxy",systemProxy},{"httpPort",httpPort},{"socksPort",socksPort}}); return true;
+    }
     Q_PROPERTY(bool hasPendingSplitTunnelChanges READ hasPendingSplitTunnelChanges NOTIFY splitTunnelStatusChanged)
     Q_PROPERTY(bool isSplitTunnelReconnectInProgress READ isSplitTunnelReconnectInProgress NOTIFY splitTunnelStatusChanged)
     Q_PROPERTY(bool isConnected READ isConnected NOTIFY connectionStateChanged)
@@ -48,6 +65,7 @@ public slots:
     void onTranslationsUpdated();
 
 signals:
+    void proxyChanged();
     void splitTunnelStatusChanged();
     void connectionStateChanged();
 

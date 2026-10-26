@@ -175,7 +175,9 @@ void CoreController::initCoreControllers()
 void CoreController::initControllers()
 {
 #ifdef Q_OS_WIN
-    setQmlContextProperty("TrafficStatistics", new TrafficStatisticsController(m_vpnConnection.get(), this));
+    auto *statistics = new TrafficStatisticsController(m_vpnConnection.get(), this);
+    statistics->attachProxy(m_connectionController->proxyConnection());
+    setQmlContextProperty("TrafficStatistics", statistics);
 #endif
     m_connectionUiController = new ConnectionUiController(m_connectionController, m_serversController, this);
     setQmlContextProperty("ConnectionController", m_connectionUiController);
@@ -209,6 +211,8 @@ void CoreController::initControllers()
 
     m_pageController = new PageController(m_serversController, m_settingsController, this);
     setQmlContextProperty("PageController", m_pageController);
+    connect(m_connectionController, &ConnectionController::proxyError, m_pageController,
+            qOverload<const QString &>(&PageController::showErrorMessage));
 
     m_serversUiController = new ServersUiController(m_serversController, m_settingsController, m_serversModel, m_containersModel, m_defaultServerContainersModel, this);
     setQmlContextProperty("ServersUiController", m_serversUiController);

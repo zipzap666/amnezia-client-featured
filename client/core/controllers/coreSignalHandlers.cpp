@@ -245,7 +245,8 @@ void CoreSignalHandlers::initLanguageHandler()
 
 void CoreSignalHandlers::initAutoConnectHandler()
 {
-    if (m_coreController->m_settingsUiController->isAutoConnectEnabled()
+    if (!m_coreController->m_connectionController->proxyRecoveryPending()
+        && m_coreController->m_settingsUiController->isAutoConnectEnabled()
         && !m_coreController->m_serversController->getDefaultServerId().isEmpty()) {
         QTimer::singleShot(1000, this, [this]() { m_coreController->m_connectionUiController->toggleConnection(); });
     }

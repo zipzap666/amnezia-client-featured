@@ -104,6 +104,7 @@ PageType {
     property list<QtObject> settingsEntries: [
         servers,
         connection,
+        systemProxy,
         application,
         news,
         backup,
@@ -142,6 +143,14 @@ PageType {
         readonly property var clickedHandler: function() {
             PageController.goToPage(PageEnum.PageSettingsApplication)
         }
+    }
+
+    QtObject {
+        id: systemProxy
+        property string title: qsTr("System proxy")
+        readonly property string leftImagePath: "qrc:/images/controls/radio.svg"
+        property bool isVisible: Qt.platform.os === "windows"
+        readonly property var clickedHandler: function() { PageController.goToPage(PageEnum.PageSettingsSystemProxy) }
     }
 
     QtObject {

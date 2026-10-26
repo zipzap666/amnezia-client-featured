@@ -1,13 +1,13 @@
 package main
 
 import (
+	"amnezia.org/awg-proxy/internal/netstack"
 	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"github.com/amnezia-vpn/amneziawg-go/v3/conn"
 	"github.com/amnezia-vpn/amneziawg-go/v3/device"
-	"github.com/amnezia-vpn/amneziawg-go/v3/tun/netstack"
 	"net"
 	"os"
 	"strconv"

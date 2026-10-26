@@ -1,8 +1,14 @@
 # AmneziaWG proxy helper
 
-Windows x64, Go 1.26.0, AWG v3.1.20260814. The engine and gVisor versions
+Windows x64, Go 1.27.3, AWG v3.1.20260814. The engine and gVisor versions
 are pinned by `go.mod` and `go.sum`. The Conan recipe builds and packages the
 helper beside the Qt executable, with third-party license notices.
+
+The proxy pins gVisor `v0.0.0-20261026092510-51b3b7c82730`, including the
+upstream CUBIC window and ACK credit fixes. Its local netstack adapter selects
+CUBIC, allows a 4 MiB default TCP send buffer, and returns packet storage to
+gVisor's pools. See `internal/netstack/README.md` for source provenance.
+These settings affect userspace TCP only; VPN mode uses the Windows TCP stack.
 
 The helper does not create a system adapter or change Windows DNS, routes,
 firewall or proxy settings. The Qt `WindowsSystemProxyManager` owns the
@@ -49,6 +55,14 @@ adapter, system DNS or system proxy configuration is involved. Coverage includes
 AWG 1/2/3 parameters, S4, HeaderProtectionKey, I1-I5, header ranges, HTTP,
 HTTPS CONNECT, SOCKS5 domain requests, explicit direct routes, no direct
 fallback, unsupported commands, occupied ports and shutdown.
+
+Bulk HTTP/HTTPS upload tests verify SHA-256 integrity through local AWG peers.
+For an opt-in WAN simulation, set `AWG_PROXY_THROUGHPUT=1` and run
+`go test -run TestThroughputDiagnostic -v -count=1 -timeout 180s`.
+It compares upstream Reno with the proxy adapter through the actual loopback
+relay at a simulated 58 ms RTT, with and without periodic packet drops.
+This isolates TCP from AWG encryption and is not an end-to-end Speedtest result.
+No throughput threshold is enforced on the developer machine.
 
 Qt recovery, snapshot and QML tests live in `tests/awgProxy`. Recovery tests
 replace all WinINet operations with an in-memory backend. Existing regression

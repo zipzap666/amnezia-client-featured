@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ecdh"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/hex"
@@ -166,7 +167,7 @@ func testLocalAWGProxy(t *testing.T, version int) {
 		t.Fatal(e)
 	}
 	defer listener.Close()
-	httpServer := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "inside-awg") })}
+	httpServer := &http.Server{Handler: uploadTestHandler("inside-awg")}
 	defer httpServer.Close()
 	go httpServer.Serve(listener)
 	listener6, e := serverNet.ListenTCPAddrPort(netip.MustParseAddrPort("[fd77::1]:80"))
@@ -195,7 +196,7 @@ func testLocalAWGProxy(t *testing.T, version int) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	secureServer := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "tls-inside-awg") }))
+	secureServer := httptest.NewUnstartedServer(uploadTestHandler("tls-inside-awg"))
 	secureServer.Listener.Close()
 	secureServer.Listener = secureListener
 	secureServer.StartTLS()
@@ -347,6 +348,27 @@ func testLocalAWGProxy(t *testing.T, version int) {
 	if string(body) != "tls-inside-awg" {
 		t.Fatal("TLS payload")
 	}
+	// Exercise sustained HTTP forwarding and HTTPS CONNECT uploads, including
+	// integrity across many netstack packets and pooled packet buffers.
+	payload := strings.Repeat("upload-integrity-0123456789abcdef", 32768)
+	expected := fmt.Sprintf("%x", sha256.Sum256([]byte(payload)))
+	for _, tc := range []struct {
+		client *http.Client
+		target string
+	}{
+		{plainClient, "http://service.test/upload"},
+		{tlsClient, "https://service.test/upload"},
+	} {
+		resp, err := tc.client.Post(tc.target, "application/octet-stream", strings.NewReader(payload))
+		if err != nil {
+			t.Fatal("upload:", err)
+		}
+		got, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil || string(got) != expected {
+			t.Fatalf("upload integrity: %s, %v", got, err)
+		}
+	}
 	c, e = net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", hp))
 	if e != nil {
 		t.Fatal(e)
@@ -373,6 +395,21 @@ func testLocalAWGProxy(t *testing.T, version int) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("helper did not stop")
+	}
+}
+
+func uploadTestHandler(defaultBody string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/upload" {
+			hash := sha256.New()
+			if _, err := io.Copy(hash, r.Body); err != nil {
+				http.Error(w, "body read failed", 400)
+				return
+			}
+			fmt.Fprintf(w, "%x", hash.Sum(nil))
+			return
+		}
+		io.WriteString(w, defaultBody)
 	}
 }
 

@@ -23,7 +23,7 @@ class AwgProxy(ConanFile):
             raise ConanInvalidConfiguration("AWG proxy supports Windows x64 only")
 
     def build_requirements(self):
-        self.tool_requires("go/1.26.0")
+        self.tool_requires("go/1.27.3")
 
     def build(self):
         self.run('go build -mod=readonly -buildvcs=false -trimpath -ldflags="-s -w" '
